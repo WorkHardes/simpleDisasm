@@ -3,4 +3,7 @@ __pycache__/
 files/
 results/
 
+libelf/
+idapython/
+
 tests.py
