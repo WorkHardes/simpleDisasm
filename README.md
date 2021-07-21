@@ -7,13 +7,7 @@ This is an application for decompile files with .jar and .elf extensions.
 ### On windows
 
 ```bash
-cd app
-py main.py
-```
-
-### or
-
-```bash
+mkdir results
 cd app
 python main.py
 ```
@@ -21,6 +15,7 @@ python main.py
 ### On Linux
 
 ```bash
+mkdir results
 cd app
 python3 main.py
 ```
