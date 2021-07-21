@@ -1,6 +1,6 @@
 # Decompiler .jar and .elf app
 
-This is an application for decompile files with .jar and .elf extensions.
+This is an application for disasm files with .jar and .elf extensions.
 
 ## run in CLI
 
