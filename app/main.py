@@ -1,25 +1,53 @@
 import os
+import magic
 
 from capstone import *
 
 from config import RESULTS_FOLDER_PATH
-from services import define_result_file_name
+from services import define_result_file_name, disasm_and_save_result
 
 
-file_path = str(input("Inputh file path: "))
+def main():
+    # Open file
+    while True:
+        file_path = str(input("Inputh file path: "))
+        try:
+            file_content = open(file_path, "rb").read()
+            file_type = magic.from_buffer(file_content)
+            break
+        except FileNotFoundError:
+            print(f"Error! File {file_path} doesn't exists!")
 
-result_file_name = os.path.basename(file_path) + " disasm.txt"
-result_file_name = define_result_file_name(result_file_name[::-1])
+    result_file_name = os.path.basename(file_path) + " disasm.txt"
+    result_file_name = define_result_file_name(result_file_name[::-1])
 
-file_content = open(file_path, "rb").read()
+    print("Filetype: ", file_type)
+    # Disassembly file and write result in folder ..files/
+    if "ARM" in file_type and "32-bit" in file_type:
+        md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
+        print("Capstone: CS_ARCH_ARM, CS_MODE_ARM")
+        disasm_and_save_result(md, result_file_name, file_content)
+
+    if "ARM" in file_type and "64-bit" in file_type:
+        md = Cs(CS_ARCH_ARM64, CS_MODE_ARM)
+        print("capstone: CS_ARCH_ARM64, CS_MODE_ARM")
+        disasm_and_save_result(md, result_file_name, file_content)
+
+    if "Intel" in file_type and "16-bit" in file_type:
+        md = Cs(CS_ARCH_X86, CS_MODE_16)
+        print("capstone: CS_ARCH_X86, CS_MODE_16")
+        disasm_and_save_result(md, result_file_name, file_content)
+
+    if "Intel" in file_type and "32-bit" in file_type:
+        md = Cs(CS_ARCH_X86, CS_MODE_32)
+        print("capstone: CS_ARCH_X86, CS_MODE_32")
+        disasm_and_save_result(md, result_file_name, file_content)
+
+    if "Intel" in file_type and "64-bit" in file_type:
+        md = Cs(CS_ARCH_X86, CS_MODE_64)
+        print("capstone: CS_ARCH_X86, CS_MODE_64")
+        disasm_and_save_result(md, result_file_name, file_content)
 
 
-# Disassembly file and write result in folder ..files/
-md = Cs(CS_ARCH_ARM, CS_MODE_THUMB)
-md.skipdata_setup = ("db", None, None)
-md.skipdata = True
-
-with open(f"{RESULTS_FOLDER_PATH}{result_file_name}", "w") as result_file:
-    for i in md.disasm(file_content, 0x1):
-        result_file.write("0x{: <5} {: <8} {: <8}\n".format(
-            i.address, i.mnemonic, i.op_str))
+if __name__ == "__main__":
+    main()

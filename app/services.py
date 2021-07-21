@@ -1,5 +1,7 @@
 import os
 
+from capstone import *
+
 from config import RESULTS_FOLDER_PATH
 
 
@@ -28,3 +30,16 @@ def define_result_file_name(result_file_name: str) -> str:
             break
 
     return result_file_name
+
+
+def disasm_and_save_result(md, result_file_name, file_content) -> None:
+    md.skipdata_setup = ("db", None, None)
+    md.skipdata = True
+
+    with open(f"{RESULTS_FOLDER_PATH}{result_file_name}", "w") as result_file:
+        for i in md.disasm(file_content, 0x1):
+            result_file.write("0x{: <5} {: <8} {: <8}\n".format(
+                i.address, i.mnemonic, i.op_str))
+
+    print(
+        f"Result of the disasm file in {RESULTS_FOLDER_PATH}{result_file_name}")

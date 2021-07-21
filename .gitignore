@@ -1,9 +1,13 @@
+# Folders program don't need
 /venv/
 __pycache__/
+
+# Folders program need
 files/
 results/
 
+# Other folders
 libelf/
-idapython/
 
+# Other files
 tests.py
