@@ -1,0 +1,9 @@
+version: "3.7"
+
+services:
+  diff_app:
+    build: .
+    volumes:
+      - ./files:/usr/src/files
+      - ./results:/usr/src/results
+    command: "python3 main.py"

@@ -10,7 +10,8 @@ from services import define_result_file_name, disasm_and_save_result
 def main():
     # Open file
     while True:
-        file_path = str(input("Inputh file path: "))
+        file_path = "../files/3.so"
+        # file_path = str(input("Inputh file path: "))
         try:
             file_content = open(file_path, "rb").read()
             file_type = magic.from_buffer(file_content)
