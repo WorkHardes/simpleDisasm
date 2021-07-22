@@ -6,8 +6,5 @@ __pycache__/
 files/
 results/
 
-# Other folders
-libelf/
-
 # Other files
 tests.py

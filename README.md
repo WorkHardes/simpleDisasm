@@ -1,4 +1,4 @@
-# Decompiler .jar and .elf app
+# Disasm .jar and .elf app
 
 This is an application for disasm files with .jar and .elf extensions.
 

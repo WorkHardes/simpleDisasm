@@ -1,4 +1,5 @@
 import os
+import sys
 
 from capstone import *
 
@@ -37,9 +38,11 @@ def disasm_and_save_result(md, result_file_name, file_content) -> None:
     md.skipdata = True
 
     with open(f"{RESULTS_FOLDER_PATH}{result_file_name}", "w") as result_file:
-        for i in md.disasm(file_content, 0x1):
+        for (address, size, mnemonic, op_str) in md.disasm_lite(file_content, 0x1):
+            # if mnemonic in ("bx", "blx"):
+            #     md.mode = CS_MODE_THUMB
             result_file.write("0x{: <5} {: <8} {: <8}\n".format(
-                i.address, i.mnemonic, i.op_str))
+                address, mnemonic, op_str))
 
-    print(
-        f"Result of the disasm file in {RESULTS_FOLDER_PATH}{result_file_name}")
+    print(f"Result of the disasm file in {RESULTS_FOLDER_PATH}{result_file_name}")
+    sys.exit()
