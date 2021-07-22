@@ -25,27 +25,22 @@ def main():
     # Disassembly file and write result in folder ..files/
     if "ARM" in file_type and "32-bit" in file_type:
         md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
-        print("Capstone: CS_ARCH_ARM, CS_MODE_ARM")
         disasm_and_save_result(md, result_file_name, file_content)
 
     if "ARM" in file_type and "64-bit" in file_type:
         md = Cs(CS_ARCH_ARM64, CS_MODE_ARM)
-        print("capstone: CS_ARCH_ARM64, CS_MODE_ARM")
         disasm_and_save_result(md, result_file_name, file_content)
 
     if "Intel" in file_type and "16-bit" in file_type:
         md = Cs(CS_ARCH_X86, CS_MODE_16)
-        print("capstone: CS_ARCH_X86, CS_MODE_16")
         disasm_and_save_result(md, result_file_name, file_content)
 
     if "Intel" in file_type and "32-bit" in file_type:
         md = Cs(CS_ARCH_X86, CS_MODE_32)
-        print("capstone: CS_ARCH_X86, CS_MODE_32")
         disasm_and_save_result(md, result_file_name, file_content)
 
     if "Intel" in file_type and "64-bit" in file_type:
         md = Cs(CS_ARCH_X86, CS_MODE_64)
-        print("capstone: CS_ARCH_X86, CS_MODE_64")
         disasm_and_save_result(md, result_file_name, file_content)
 
 
