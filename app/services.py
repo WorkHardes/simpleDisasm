@@ -35,7 +35,6 @@ def define_result_file_name(result_file_name: str) -> str:
 
 
 def disasm_and_save_result(md, result_file_name, file_content) -> None:
-    print(f"Capstone start options: {md.arch}, {md.mode}")
 
     first_mode = md.mode
     md.skipdata_setup = ("db", None, None)
