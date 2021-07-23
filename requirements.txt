@@ -1,3 +1,4 @@
 capstone==4.0.2
 libmagic==1.0
 python-magic==0.4.24
+python-magic-bin==0.4.14

@@ -4,6 +4,7 @@ __pycache__/
 
 # Folders program need
 results/
+files/
 
 # Other files
 tests.py

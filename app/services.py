@@ -43,7 +43,6 @@ def disasm_and_save_result(md, result_file_name, file_content) -> None:
     with open(f"{RESULTS_FOLDER_PATH}{result_file_name}", "w") as result_file:
 
         for (address, size, mnemonic, op_str) in md.disasm_lite(file_content, 0x1):
-
             # Change disasm MODE
             if mnemonic in ("bx", "blx"):
                 md.mode = CS_MODE_THUMB
