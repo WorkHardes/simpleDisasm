@@ -87,7 +87,7 @@ def disasm_archive(file_path: str, result_folder_name: str) -> None:
     # Create list of path of .class files
     for root, dirs, files in os.walk(result_of_extract_path):
         for file in files:
-            if file.endswith(".class"):
+            if file.endswith(".class") or file.endswith(".dex") or file.endswith(".so") or file.endswith(".kotlin_builtins") or file.endswith(".asrc"):
                 java_classes.append(os.path.join(root, file))
 
     # Disasm all classes in extracted jar file
@@ -104,11 +104,10 @@ def disasm_archive(file_path: str, result_folder_name: str) -> None:
         print("Filetype: ", file_type)
 
         # Disassembly file and write result in folder ..results/
-        if "compiled Java class data" in file_type:
-            md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
-            print("Capstone start options: CS_ARCH_ARM, CS_MODE_ARM")
-            disasm_and_save_result(md, result_folder_name,
-                                   result_file_name, file_content)
+        md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
+        print("Capstone start options: CS_ARCH_ARM, CS_MODE_ARM")
+        disasm_and_save_result(md, result_folder_name,
+                               result_file_name, file_content)
 
 
 def disasm_bin_file(file_path: str, file_type: str, file_content, result_folder_name: str) -> None:
