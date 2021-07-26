@@ -3,9 +3,7 @@
 __pycache__/
 
 # Folders program need
-results/
 files/
-extracted_archives/
 
 # Other files
 tests.py

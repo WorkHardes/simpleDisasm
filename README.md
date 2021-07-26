@@ -7,7 +7,6 @@ This is an application for disasm files with .jar and .elf extensions.
 ### On windows
 
 ```bash
-mkdir results
 cd app
 python main.py
 ```
@@ -15,7 +14,6 @@ python main.py
 ### On Linux
 
 ```bash
-mkdir results
 cd app
 python3 main.py
 ```
