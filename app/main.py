@@ -12,7 +12,7 @@ def main():
     # Open file
     while True:
         # file_path = str(input("Inputh file or archive path: "))
-        file_path = "../files/1.jar"
+        file_path = "../files/4.so"
         try:
             file_content = open(file_path, "rb").read()
             break
