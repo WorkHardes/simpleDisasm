@@ -1,9 +1,6 @@
 # Folders program don't need
 /venv/
 __pycache__/
-pyjadx/
-TTDeDroid/
-androguard/
 
 # Folders program need
 files/
