@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import pathlib
 import zipfile
 import magic
@@ -38,6 +39,7 @@ class DisasmStrategy(ABC):
         pass
 
     def define_result_file_name(self, result_file_name: str) -> str:
+        result_file_name = result_file_name[::-1]
         file_name = result_file_name[result_file_name.find(".")+1:]
         file_name = file_name[::-1]
 
@@ -53,9 +55,9 @@ class DisasmStrategy(ABC):
         name_counter = 0
         while True:
             if result_file_name in os.listdir(f"{RESULTS_FOLDER_PATH}"):
-                file_name = file_name.replace(f" (копия {name_counter})", "")
+                file_name = file_name.replace(f"_(копия {name_counter})", "")
                 name_counter += 1
-                file_name += f" (копия {name_counter})"
+                file_name += f"_(копия {name_counter})"
                 result_file_name = file_name + "." + file_extension
             else:
                 break
@@ -64,9 +66,8 @@ class DisasmStrategy(ABC):
     def extract_archive(self, file_path: str) -> str:
         archive = zipfile.ZipFile(file_path, "r")
 
-        result_folder_path = os.path.basename(file_path) + " extracted"
-        result_folder_path = self.define_result_file_name(
-            result_folder_path[::-1])
+        result_folder_path = os.path.basename(file_path) + "_extracted"
+        result_folder_path = self.define_result_file_name(result_folder_path)
 
         result_of_extraction_path = f"{RESULT_EXTRACTED_ARCHIVE_PATH}{result_folder_path}"
         archive.extractall(result_of_extraction_path)
@@ -83,6 +84,9 @@ class DisasmStrategy(ABC):
         md.skipdata = True
 
         result_folder_path = f"{RESULTS_FOLDER_PATH}{result_folder_name}{result_file_name}"
+
+        # print("res: ", result_folder_path)
+        # sys.exit()
 
         # Disasm and save result in {result_folder_path}
         with open(result_folder_path, "w") as result_file:
@@ -108,19 +112,44 @@ class DisasmStrategy(ABC):
 class DisasmArchiveStrategy(DisasmStrategy):
 
     def disasm_file(self, file_path: str, result_folder_name: str, file_type: str = None, file_content=None) -> None:
+        # .dex -> .smali using dex2jar
+        file_name = file_path[::-1]
+        file_name = file_name[file_name.find("/")-1::-1]
+        smali_result_folder_name = file_name + "_smali_files"
+        os.system(
+            f"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {RESULTS_FOLDER_PATH}{result_folder_name}{smali_result_folder_name}")
+
         result_of_extraction_path = self.extract_archive(file_path)
         executable_files_list = []
 
         # Create list of path of .class files
+        i = 0
         for root, dirs, files in os.walk(result_of_extraction_path):
             for file in files:
                 file = root + "/" + file
                 file_content = open(file, "rb").read()
                 file_type = magic.from_buffer(file_content)
-                if "compiled Java class data" in file_type or "Dalvik dex file" in file_type or "ELF" in file_type:
+
+                if "ELF" in file_type:
                     executable_files_list.append(os.path.join(root, file))
+                # Disasm .class files with jadx
+                elif "compiled Java class data" in file_type:
+                    print("|", i, "|", "file_path: ",
+                          file, "\n       file_type: ", file_type)
+                    i += 1
+                    if "_java_files" not in result_folder_name:
+                        result_folder_name_java_files = result_folder_name + file_name + "_java_files"
+                    os.system(
+                        f"jadx {file} -d {RESULTS_FOLDER_PATH}{result_folder_name_java_files}")
 
         # Disasm all classes in extracted jar file
+        if len(executable_files_list) != 0:
+            asm_result_folder_name = file_path[::-1]
+            asm_result_folder_name = asm_result_folder_name[asm_result_folder_name.find(
+                "/")-1::-1] + "_asm_files/"
+            result_folder_name += asm_result_folder_name
+            res = os.mkdir(f"{RESULTS_FOLDER_PATH}{result_folder_name}")
+
         for file_path in executable_files_list:
             try:
                 file_content = open(file_path, "rb").read()
@@ -128,9 +157,8 @@ class DisasmArchiveStrategy(DisasmStrategy):
                 print(f"Error! File {file_path} doesn't exists!")
 
             file_type = magic.from_buffer(file_content)
-            result_file_name = os.path.basename(file_path) + " disasm.txt"
-            result_file_name = self.define_result_file_name(
-                result_file_name[::-1])
+            result_file_name = os.path.basename(file_path) + "_disasm.asm"
+            result_file_name = self.define_result_file_name(result_file_name)
 
             print("Filetype: ", file_type)
 
@@ -144,11 +172,16 @@ class DisasmArchiveStrategy(DisasmStrategy):
 class DisasmBinStrategy(DisasmStrategy):
 
     def disasm_file(self, file_path: str, result_folder_name: str, file_type: str = None, file_content=None) -> None:
-        result_file_name = os.path.basename(file_path) + " disasm.txt"
-        result_file_name = self.define_result_file_name(result_file_name[::-1])
+        result_file_name = os.path.basename(file_path) + "_disasm.txt"
+        result_file_name = self.define_result_file_name(result_file_name)
 
         # Disassembly file and write result in folder ..results/
-        if "ARM" in file_type and "32-bit" in file_type or "compiled Java class data" in file_type:
+        if "compiled Java class data" in file_type:
+            result_folder_name += "_java_files"
+            os.system(
+                f"jadx {file_path} -d {RESULTS_FOLDER_PATH}{result_folder_name}")
+
+        if "ARM" in file_type and "32-bit" in file_type:
             md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
             print("Capstone start options: CS_ARCH_ARM, CS_MODE_ARM")
             self.disasm_and_save_result(md, result_folder_name,
@@ -183,7 +216,7 @@ if __name__ == "__main__":
     # Open file
     while True:
         # file_path = str(input("Inputh file or archive path: "))
-        file_path = "../files/5.apk"
+        file_path = "../files/1.jar"
         try:
             file_content = open(file_path, "rb").read()
             break
@@ -192,14 +225,24 @@ if __name__ == "__main__":
 
     # Define file name and type
     file_type = magic.from_buffer(file_content)
-    result_folder_name = os.path.basename(file_path) + " disasm/"
-    # result_folder_name = define_result_file_name()
+    result_folder_name = os.path.basename(file_path) + "_disasm"
+
+    # Set copy in folder name if it exists
+    name_counter = 0
+    while True:
+        if result_folder_name in os.listdir(f"{RESULTS_FOLDER_PATH}"):
+            result_folder_name = result_folder_name.replace(
+                f"_(копия {name_counter})", "")
+            name_counter += 1
+            result_folder_name += f"_(копия {name_counter})"
+        else:
+            result_folder_name += "/"
+            break
     os.mkdir(f"{RESULTS_FOLDER_PATH}{result_folder_name}")
 
     if "Zip archive data" in file_type:
         context = DisasmContext(DisasmArchiveStrategy())
     else:
         context = DisasmContext(DisasmBinStrategy())
-
     context.choice_disasm_options(file_path, result_folder_name,
                                   file_type, file_content)

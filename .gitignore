@@ -2,11 +2,11 @@
 /venv/
 __pycache__/
 temp/
-# dex2jar-2.0/
 
 # Folders program need
 files/
-Krakatau/
+# dex2jar-2.0/
+jadx/
 
 # Other files
 tests.py

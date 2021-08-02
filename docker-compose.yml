@@ -4,6 +4,7 @@ services:
   disasm_app:
     build: .
     volumes:
+      - ./app:/usr/src/app
       - ./files:/usr/src/files
       - ./results:/usr/src/results
       - ./extracted_archives:/usr/src/extracted_archives
