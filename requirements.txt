@@ -2,16 +2,22 @@ amqp==5.0.6
 billiard==3.6.4.0
 capstone==4.0.2
 celery==5.1.2
+cffi==1.14.6
 click==7.1.2
 click-didyoumean==0.0.3
 click-plugins==1.1.1
 click-repl==0.2.0
+gevent==21.1.2
+greenlet==1.1.0
 kombu==5.1.0
 libmagic==1.0
 prompt-toolkit==3.0.19
+pycparser==2.20
 python-magic==0.4.24
 # python-magic-bin==0.4.14
 pytz==2021.1
 six==1.16.0
 vine==5.0.0
 wcwidth==0.2.5
+zope.event==4.5.0
+zope.interface==5.4.0
