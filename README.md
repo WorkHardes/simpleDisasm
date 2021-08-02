@@ -1,6 +1,6 @@
-# Disasm .jar and .elf app
+# Disasm android execitable files app
 
-This is an application for disasm files with .jar and .elf extensions.
+This is an application for disasm files.
 
 ## run in CLI
 

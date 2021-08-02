@@ -1,9 +1,12 @@
 # Folders program don't need
 /venv/
 __pycache__/
+temp/
+# dex2jar-2.0/
 
 # Folders program need
 files/
+Krakatau/
 
 # Other files
 tests.py
