@@ -12,9 +12,9 @@ dex2jar_app/
 
 # Other files
 tests.py
+1.jar
 *.apk
 *.dex
-*.jar
 *.elf
 *.so
 *.class
