@@ -22,13 +22,6 @@ services:
       - rabbitmq
     command: "celery -A tasks worker -l info -P gevent"
 
-  # dex2jar_app:
-  #   image: fspnetwork/dex2jar
-  #   command: "d2j-dex2jar.sh -h"
-
-  # jadx_app:
-  #   image: samsheff/jadx
-
   disasm_app:
     build: .
     environment:
@@ -36,10 +29,6 @@ services:
       - RABBITMQ_USERNAME=guest
       - RABBITMQ_PASSWORD=guest
       - RABBITMQ_PORT=5672
-    depends_on:
-      - rabbitmq
-      # - dex2jar_app
-      # - jadx_app
     volumes:
       - ./app:/usr/src/app
       - ./files:/usr/src/files

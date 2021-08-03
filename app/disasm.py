@@ -113,7 +113,8 @@ class DisasmArchiveStrategy(DisasmStrategy):
         file_name = file_name[file_name.find("/")-1::-1]
         smali_result_folder_name = file_name + "_smali_files"
         os.system(
-            f"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {RESULTS_FOLDER_PATH}{result_folder_name}{smali_result_folder_name}")
+            f"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {RESULTS_FOLDER_PATH}{result_folder_name}{smali_result_folder_name}")
+        # {file_path} -o {RESULTS_FOLDER_PATH}{result_folder_name}{smali_result_folder_name}
 
         result_of_extraction_path = self.extract_archive(file_path)
         executable_files_list = []
