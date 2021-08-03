@@ -2,6 +2,7 @@ FROM python:3.9
 
 COPY ./app /usr/src/app
 COPY ./files /usr/src/files
+COPY ./dex2jar-2.0 /usr/src
 COPY ./results /usr/src/results
 COPY ./extracted_archives /usr/src/extracted_archives
 COPY ./requirements.txt /usr/src/

@@ -158,7 +158,7 @@ class DisasmArchiveStrategy(DisasmStrategy):
                 file_name) + "_disasm.asm"
             result_file_name = self.define_result_file_name(result_file_name)
 
-            print("Filetype: ", file_type)
+            print("Filepath", file_name, "\nFiletype: ", file_type)
 
             # Disassembly file and write result in folder ..results/
             md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
