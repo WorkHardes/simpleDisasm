@@ -137,7 +137,7 @@ class DisasmArchiveStrategy(DisasmStrategy):
                     if "_java_files" not in result_folder_name:
                         result_folder_name_java_files = result_folder_name + file_name + "_java_files"
                     os.system(
-                        f"jadx {file} -d {RESULTS_FOLDER_PATH}{result_folder_name_java_files}")
+                        f"../jadx-1.2.0/bin/jadx {file} -d {RESULTS_FOLDER_PATH}{result_folder_name_java_files}")
 
         # Disasm all classes in extracted jar file
         if len(executable_files_list) != 0:
@@ -178,7 +178,7 @@ class DisasmBinStrategy(DisasmStrategy):
         if "compiled Java class data" in file_type:
             result_folder_name += "_java_files"
             os.system(
-                f"jadx {file_path} -d {RESULTS_FOLDER_PATH}{result_folder_name}")
+                f"../jadx-1.2.0/bin/jadx {file_path} -d {RESULTS_FOLDER_PATH}{result_folder_name}")
 
         if "ARM" in file_type and "32-bit" in file_type:
             md = Cs(CS_ARCH_ARM, CS_MODE_ARM)

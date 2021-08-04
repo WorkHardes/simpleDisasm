@@ -1,14 +1,13 @@
 # Folders program don't need
-/venv/
+venv/
 __pycache__/
 temp/
+*extracted/
 
 # Folders program need
-files/
+# files/
 # dex2jar-2.0/
-jadx/
-jadx_app/
-dex2jar_app/
+# jadx-1.2.0/
 
 # Other files
 tests.py

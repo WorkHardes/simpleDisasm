@@ -12,9 +12,4 @@ COPY ./requirements.txt /usr/src/
 RUN pip3 install --upgrade pip && \
     pip3 install -r /usr/src/requirements.txt
 
-WORKDIR /usr/src
-RUN git clone https://github.com/skylot/jadx.git
-WORKDIR /usr/src/jadx
-RUN ./gradlew
-
 WORKDIR /usr/src/app
