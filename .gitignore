@@ -3,6 +3,7 @@ venv/
 __pycache__/
 temp/
 *extracted/
+*disasm/
 
 # Folders program need
 # files/
