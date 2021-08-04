@@ -4,16 +4,8 @@ This is an application for disasm files.
 
 ## run in CLI
 
-### On windows
+### Build and rin containers
 
 ```bash
-cd app
-python main.py
-```
-
-### On Linux
-
-```bash
-cd app
-python3 main.py
+docker-compose up -d --build
 ```
