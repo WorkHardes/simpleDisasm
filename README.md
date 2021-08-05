@@ -1,10 +1,10 @@
-# Disasm android execitable files app
+# Disasm android executable files app
 
 This is an application for disasm files.
 
 ## run in CLI
 
-### Build and rin containers
+### Build and run containers
 
 ```bash
 docker-compose up -d --build
