@@ -12,19 +12,19 @@ from config import PATH_OF_RESULTS_FOLDER, PATH_OF_EXTRACTED_ARCHIVES_FOLDER
 
 class DisasmContext():
 
-    def __init__(self, strategy: DisasmStrategy) -> None:
-        self._strategy = strategy
+    def __init__(self, disasm_strategy: DisasmStrategy) -> None:
+        self._disasm_strategy = disasm_strategy
 
     @property
-    def strategy(self) -> DisasmStrategy:
-        return self._strategy
+    def disasm_strategy(self) -> DisasmStrategy:
+        return self._disasm_strategy
 
-    @strategy.setter
-    def strategy(self, strategy: DisasmStrategy) -> None:
-        self._strategy = strategy
+    @disasm_strategy.setter
+    def disasm_strategy(self, disasm_strategy: DisasmStrategy) -> None:
+        self._disasm_strategy = disasm_strategy
 
     def choice_disasm_options(self, file_path: str, result_folder_name: str) -> None:
-        self._strategy.disasm_file(file_path, result_folder_name)
+        self._disasm_strategy.disasm_file(file_path, result_folder_name)
 
 
 class DisasmStrategy(ABC):
@@ -34,6 +34,7 @@ class DisasmStrategy(ABC):
         pass
 
     def define_result_file_name(self, result_file_name: str) -> str:
+        # Defining the file name and extension
         result_file_name = result_file_name[::-1]
         file_name = result_file_name[result_file_name.find(".")+1:]
         file_name = file_name[::-1]
@@ -46,7 +47,7 @@ class DisasmStrategy(ABC):
 
         result_file_name = file_name + "." + file_extension
 
-        # Define file name. If this file name exists: {file_name} += "{file_name} (копия {copy_number_counter}).{file_extension}"
+        # Defining the file name. If file name exists: {file_name} += "{file_name}_(копия {copy_number_counter}).{file_extension}"
         copy_number_counter = 0
         while True:
             if result_file_name in os.listdir(f"{PATH_OF_RESULTS_FOLDER}"):
@@ -65,35 +66,37 @@ class DisasmStrategy(ABC):
         result_folder_path = os.path.basename(file_path) + "_extracted"
         result_folder_path = self.define_result_file_name(result_folder_path)
 
-        result_of_extraction_path = f"{PATH_OF_EXTRACTED_ARCHIVES_FOLDER}{result_folder_path}"
-        archive.extractall(result_of_extraction_path)
+        result_of_extraction_folder_path = f"{PATH_OF_EXTRACTED_ARCHIVES_FOLDER}{result_folder_path}"
+        archive.extractall(result_of_extraction_folder_path)
 
-        print(f"Archive extracted in {result_of_extraction_path}")
+        print(f"Archive extracted in {result_of_extraction_folder_path}")
 
         archive.close()
-        return result_of_extraction_path
+        return result_of_extraction_folder_path
 
-    def disasm_and_save_result(self, md, result_folder_name: str, result_file_name: str, file_content) -> None:
-        # Set capstone options on md
-        first_mode = md.mode
+    def disasm_and_save_result(self, md: Cs, file_path: str, result_folder_name: str, result_file_name: str) -> None:
+        try:
+            file_content = open(file_path, "rb").read()
+        except FileNotFoundError:
+            print(f"Error! File {file_path} doesn't exists!")
+        # Setting disasm with capstone options on md
+        first_disasm_mode = md.mode
         md.skipdata_setup = ("db", None, None)
         md.skipdata = True
 
         result_folder_path = f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_file_name}"
 
-        # Disasm and save result in {result_folder_path}
+        # Disasm and saving result in {result_folder_path}
         with open(result_folder_path, "w") as result_file:
-
             for (address, size, mnemonic, op_str) in md.disasm_lite(file_content, 0x1):
-                # Change disasm MODE
+                # Changing disasm MODE
                 if mnemonic in ("bx", "blx"):
                     md.mode = CS_MODE_THUMB
-
-                if mnemonic == "rev":
-                    if md.mode == first_mode + CS_MODE_BIG_ENDIAN:
-                        md.mode = first_mode + CS_MODE_LITTLE_ENDIAN
-                    elif md.mode == first_mode + CS_MODE_LITTLE_ENDIAN:
-                        md.mode = first_mode + CS_MODE_BIG_ENDIAN
+                elif mnemonic == "rev":
+                    if md.mode == first_disasm_mode + CS_MODE_BIG_ENDIAN:
+                        md.mode = first_disasm_mode + CS_MODE_LITTLE_ENDIAN
+                    elif md.mode == first_disasm_mode + CS_MODE_LITTLE_ENDIAN:
+                        md.mode = first_disasm_mode + CS_MODE_BIG_ENDIAN
 
                 result_file.write("0x{: <5} {: <8} {: <8}\n".format(
                     address, mnemonic, op_str))
@@ -104,106 +107,115 @@ class DisasmStrategy(ABC):
 class DisasmArchiveStrategy(DisasmStrategy):
 
     def disasm_file(self, file_path: str, result_folder_name: str) -> None:
-        file_content = open(file_path, "rb").read()
+        try:
+            file_content = open(file_path, "rb").read()
+        except FileNotFoundError:
+            print(f"Error! File {file_path} doesn't exists!")
         file_type = magic.from_buffer(file_content)
         file_name = file_path[::-1]
         file_name = file_name[file_name.find("/")-1::-1]
         smali_result_folder_name = file_name + "_smali_files"
+
         # Disasm .dex files to .smali files using dex2jar
         os.system(
             f"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{smali_result_folder_name}")
 
-        result_of_extraction_path = self.extract_archive(file_path)
+        result_of_extraction_folder_path = self.extract_archive(file_path)
         executable_files_list = []
 
-        # Create list of path of .class files
-        i = 0
-        for root, dirs, files in os.walk(result_of_extraction_path):
-            for file in files:
-                file = root + "/" + file
-                file_content = open(file, "rb").read()
+        # Creating list of path of .class files
+        for root, dirs, files in os.walk(result_of_extraction_folder_path):
+            for file_path in files:
+                file_path = root + "/" + file_path
+                try:
+                    file_content = open(file_path, "rb").read()
+                except FileNotFoundError:
+                    print(f"Error! File {file_path} doesn't exists!")
                 file_type = magic.from_buffer(file_content)
 
                 if "ELF" in file_type:
-                    executable_files_list.append(os.path.join(file))
+                    executable_files_list.append(os.path.join(file_path))
                 # Disasm .class files with jadx
                 elif "compiled Java class data" in file_type:
-                    print("|", i, "|", "file_path: ",
-                          file, "\n       file_type: ", file_type)
-                    i += 1
+                    print("file_path: ", file_path, "\nfile_type: ", file_type)
                     if "_java_files" not in result_folder_name:
-                        result_folder_name_java_files = result_folder_name + file_name + "_java_files"
+                        result_folder_name_java_files = file_name + "_java_files"
                     os.system(
-                        f"../jadx-1.2.0/bin/jadx {file} -d {PATH_OF_RESULTS_FOLDER}{result_folder_name_java_files}")
+                        f"../jadx-1.2.0/bin/jadx {file_path} -d {PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_folder_name_java_files}")
 
-        # Disasm all classes in extracted jar file
         if len(executable_files_list) != 0:
-            asm_result_folder_name = file_path[::-1]
-            asm_result_folder_name = asm_result_folder_name[asm_result_folder_name.find(
-                "/")-1::-1] + "_asm_files/"
+            # asm_result_folder_name = file_path[::-1]
+            # asm_result_folder_name = asm_result_folder_name[asm_result_folder_name.find(
+            #     "/")-1::-1] + "_asm_files/"
+            asm_result_folder_name = file_name + "_asm_files/"
             result_folder_name += asm_result_folder_name
             res = os.mkdir(f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}")
 
-        for file_name in executable_files_list:
+        # Checking if a file exists
+        for file_path in executable_files_list:
             try:
-                file_content = open(file_name, "rb").read()
+                file_content = open(file_path, "rb").read()
             except FileNotFoundError:
-                print(f"Error! File {file_name} doesn't exists!")
+                print(f"Error! File {file_path} doesn't exists!")
                 continue
 
             file_type = magic.from_buffer(file_content)
-            result_file_name = os.path.basename(file_name) + "_disasm.asm"
+            print("Filepath", file_path, "\nFiletype: ", file_type)
+
+            result_file_name = os.path.basename(file_path) + "_disasm.asm"
             result_file_name = self.define_result_file_name(result_file_name)
 
-            print("Filepath", file_name, "\nFiletype: ", file_type)
-
-            # Disassembly file and write result in folder ..results/
+            # Disasm file and write result in folder ../results/
             md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
             print("Capstone start options: CS_ARCH_ARM, CS_MODE_ARM")
-            self.disasm_and_save_result(md, result_folder_name,
-                                        result_file_name, file_content)
+            self.disasm_and_save_result(md, file_path,
+                                        result_folder_name, result_file_name)
 
 
 class DisasmBinFileStrategy(DisasmStrategy):
 
     def disasm_file(self, file_path: str, result_folder_name: str) -> None:
-        file_content = open(file_path, "rb").read()
+        try:
+            file_content = open(file_path, "rb").read()
+        except FileNotFoundError:
+            print(f"Error! File {file_path} doesn't exists!")
         file_type = magic.from_buffer(file_content)
         result_file_name = os.path.basename(file_path) + "_disasm.asm"
         result_file_name = self.define_result_file_name(result_file_name)
 
         # Disassembly file and write result in folder ..results/
         if "compiled Java class data" in file_type:
-            result_folder_name += "_java_files"
+            if "_java_files" not in result_folder_name:
+                result_folder_name += "_java_files"
             os.system(
                 f"../jadx-1.2.0/bin/jadx {file_path} -d {PATH_OF_RESULTS_FOLDER}{result_folder_name}")
 
         if "ARM" in file_type and "32-bit" in file_type:
             md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
             print("Capstone start options: CS_ARCH_ARM, CS_MODE_ARM")
-            self.disasm_and_save_result(md, result_folder_name,
-                                        result_file_name, file_content)
+            self.disasm_and_save_result(md, file_path,
+                                        result_folder_name, result_file_name)
 
         elif "ARM" in file_type and "64-bit" in file_type:
             md = Cs(CS_ARCH_ARM64, CS_MODE_ARM)
             print("Capstone start options: CS_ARCH_ARM64, CS_MODE_ARM")
-            self.disasm_and_save_result(md, result_folder_name,
-                                        result_file_name, file_content)
+            self.disasm_and_save_result(md, file_path,
+                                        result_folder_name, result_file_name)
 
         elif "Intel" in file_type and "16-bit" in file_type or "MS-DOS executable" in file_type or "NE for MS Windows" in file_type:
             md = Cs(CS_ARCH_X86, CS_MODE_16)
             print("Capstone start options: CS_ARCH_X86, CS_MODE_16")
-            self.disasm_and_save_result(md, result_folder_name,
-                                        result_file_name, file_content)
+            self.disasm_and_save_result(md, file_path,
+                                        result_folder_name, result_file_name)
 
         elif "Intel" in file_type and "32-bit" in file_type or "Intel 80386" in file_type or "x86-32" in file_type:
             md = Cs(CS_ARCH_X86, CS_MODE_32)
             print("Capstone start options: CS_ARCH_X86, CS_MODE_32")
-            self.disasm_and_save_result(md, result_folder_name,
-                                        result_file_name, file_content)
+            self.disasm_and_save_result(md, file_path,
+                                        result_folder_name, result_file_name)
 
         elif "Intel" in file_type and "64-bit" in file_type or "x86-64" in file_type:
             md = Cs(CS_ARCH_X86, CS_MODE_64)
             print("Capstone start options: CS_ARCH_X86, CS_MODE_64")
-            self.disasm_and_save_result(md, result_folder_name,
-                                        result_file_name, file_content)
+            self.disasm_and_save_result(md, file_path,
+                                        result_folder_name, result_file_name)

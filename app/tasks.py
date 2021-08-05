@@ -13,12 +13,12 @@ celery_app = Celery('fileploader', broker=BROKER_CONN_URI)
 
 @celery_app.task()
 def file_disasm_task(file_path: str) -> None:
-    # Define file type
+    # Defining the file type
     file_content = open(file_path, "rb").read()
     file_type = magic.from_buffer(file_content)
     result_folder_name = os.path.basename(file_path) + "_disasm"
 
-    # Define file name by setting (копия X) in folder name if it exists
+    # Defining the folder name by setting (копия X) if it exists
     copy_number_counter = 0
     while True:
         if result_folder_name in os.listdir(f"{PATH_OF_RESULTS_FOLDER}"):
