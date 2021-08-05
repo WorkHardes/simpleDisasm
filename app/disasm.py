@@ -169,7 +169,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
     def disasm_file(self, file_path: str, result_folder_name: str) -> None:
         file_content = open(file_path, "rb").read()
         file_type = magic.from_buffer(file_content)
-        result_file_name = os.path.basename(file_path) + "_disasm.txt"
+        result_file_name = os.path.basename(file_path) + "_disasm.asm"
         result_file_name = self.define_result_file_name(result_file_name)
 
         # Disassembly file and write result in folder ..results/
