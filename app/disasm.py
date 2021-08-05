@@ -10,7 +10,7 @@ from capstone.arm import *
 from abc import ABC, abstractmethod
 from typing import List
 
-from config import RESULTS_FOLDER_PATH, RESULT_EXTRACTED_ARCHIVE_PATH
+from config import PATH_OF_RESULTS_FOLDER, PATH_OF_EXTRACTED_ARCHIVES_FOLDER
 
 
 class DisasmContext():
@@ -26,15 +26,14 @@ class DisasmContext():
     def strategy(self, strategy: DisasmStrategy) -> None:
         self._strategy = strategy
 
-    def choice_disasm_options(self, file_path: str, result_folder_name: str, file_type: str = None, file_content=None) -> None:
-        self._strategy.disasm_file(file_path, result_folder_name,
-                                   file_type, file_content)
+    def choice_disasm_options(self, file_path: str, result_folder_name: str) -> None:
+        self._strategy.disasm_file(file_path, result_folder_name)
 
 
 class DisasmStrategy(ABC):
 
     @abstractmethod
-    def disasm_file(self, file_path: str, result_folder_name: str, file_type: str = None, file_content=None) -> None:
+    def disasm_file(self, file_path: str, result_folder_name: str) -> None:
         pass
 
     def define_result_file_name(self, result_file_name: str) -> str:
@@ -50,13 +49,14 @@ class DisasmStrategy(ABC):
 
         result_file_name = file_name + "." + file_extension
 
-        # Define file name. If this file name exists: {file_name} += "{file_name} (копия {name_counter}).{file_extension}"
-        name_counter = 0
+        # Define file name. If this file name exists: {file_name} += "{file_name} (копия {copy_number_counter}).{file_extension}"
+        copy_number_counter = 0
         while True:
-            if result_file_name in os.listdir(f"{RESULTS_FOLDER_PATH}"):
-                file_name = file_name.replace(f"_(копия {name_counter})", "")
-                name_counter += 1
-                file_name += f"_(копия {name_counter})"
+            if result_file_name in os.listdir(f"{PATH_OF_RESULTS_FOLDER}"):
+                file_name = file_name.replace(
+                    f"_(копия {copy_number_counter})", "")
+                copy_number_counter += 1
+                file_name += f"_(копия {copy_number_counter})"
                 result_file_name = file_name + "." + file_extension
             else:
                 break
@@ -68,7 +68,7 @@ class DisasmStrategy(ABC):
         result_folder_path = os.path.basename(file_path) + "_extracted"
         result_folder_path = self.define_result_file_name(result_folder_path)
 
-        result_of_extraction_path = f"{RESULT_EXTRACTED_ARCHIVE_PATH}{result_folder_path}"
+        result_of_extraction_path = f"{PATH_OF_EXTRACTED_ARCHIVES_FOLDER}{result_folder_path}"
         archive.extractall(result_of_extraction_path)
 
         print(f"Archive extracted in {result_of_extraction_path}")
@@ -82,7 +82,7 @@ class DisasmStrategy(ABC):
         md.skipdata_setup = ("db", None, None)
         md.skipdata = True
 
-        result_folder_path = f"{RESULTS_FOLDER_PATH}{result_folder_name}{result_file_name}"
+        result_folder_path = f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_file_name}"
 
         # Disasm and save result in {result_folder_path}
         with open(result_folder_path, "w") as result_file:
@@ -101,20 +101,20 @@ class DisasmStrategy(ABC):
                 result_file.write("0x{: <5} {: <8} {: <8}\n".format(
                     address, mnemonic, op_str))
 
-        print(
-            f"Result of the disasm file in {RESULTS_FOLDER_PATH}{result_file_name}", "\n")
+        print(f"Result of the disasm file in {result_folder_path}", "\n")
 
 
 class DisasmArchiveStrategy(DisasmStrategy):
 
-    def disasm_file(self, file_path: str, result_folder_name: str, file_type: str = None, file_content=None) -> None:
-        # .dex -> .smali using dex2jar
+    def disasm_file(self, file_path: str, result_folder_name: str) -> None:
+        file_content = open(file_path, "rb").read()
+        file_type = magic.from_buffer(file_content)
         file_name = file_path[::-1]
         file_name = file_name[file_name.find("/")-1::-1]
         smali_result_folder_name = file_name + "_smali_files"
+        # Disasm .dex files to .smali files using dex2jar
         os.system(
-            f"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {RESULTS_FOLDER_PATH}{result_folder_name}{smali_result_folder_name}")
-        # {file_path} -o {RESULTS_FOLDER_PATH}{result_folder_name}{smali_result_folder_name}
+            f"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{smali_result_folder_name}")
 
         result_of_extraction_path = self.extract_archive(file_path)
         executable_files_list = []
@@ -137,7 +137,7 @@ class DisasmArchiveStrategy(DisasmStrategy):
                     if "_java_files" not in result_folder_name:
                         result_folder_name_java_files = result_folder_name + file_name + "_java_files"
                     os.system(
-                        f"../jadx-1.2.0/bin/jadx {file} -d {RESULTS_FOLDER_PATH}{result_folder_name_java_files}")
+                        f"../jadx-1.2.0/bin/jadx {file} -d {PATH_OF_RESULTS_FOLDER}{result_folder_name_java_files}")
 
         # Disasm all classes in extracted jar file
         if len(executable_files_list) != 0:
@@ -145,7 +145,7 @@ class DisasmArchiveStrategy(DisasmStrategy):
             asm_result_folder_name = asm_result_folder_name[asm_result_folder_name.find(
                 "/")-1::-1] + "_asm_files/"
             result_folder_name += asm_result_folder_name
-            res = os.mkdir(f"{RESULTS_FOLDER_PATH}{result_folder_name}")
+            res = os.mkdir(f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}")
 
         for file_name in executable_files_list:
             try:
@@ -155,8 +155,7 @@ class DisasmArchiveStrategy(DisasmStrategy):
                 continue
 
             file_type = magic.from_buffer(file_content)
-            result_file_name = os.path.basename(
-                file_name) + "_disasm.asm"
+            result_file_name = os.path.basename(file_name) + "_disasm.asm"
             result_file_name = self.define_result_file_name(result_file_name)
 
             print("Filepath", file_name, "\nFiletype: ", file_type)
@@ -168,9 +167,11 @@ class DisasmArchiveStrategy(DisasmStrategy):
                                         result_file_name, file_content)
 
 
-class DisasmBinStrategy(DisasmStrategy):
+class DisasmBinFileStrategy(DisasmStrategy):
 
-    def disasm_file(self, file_path: str, result_folder_name: str, file_type: str = None, file_content=None) -> None:
+    def disasm_file(self, file_path: str, result_folder_name: str) -> None:
+        file_content = open(file_path, "rb").read()
+        file_type = magic.from_buffer(file_content)
         result_file_name = os.path.basename(file_path) + "_disasm.txt"
         result_file_name = self.define_result_file_name(result_file_name)
 
@@ -178,7 +179,7 @@ class DisasmBinStrategy(DisasmStrategy):
         if "compiled Java class data" in file_type:
             result_folder_name += "_java_files"
             os.system(
-                f"../jadx-1.2.0/bin/jadx {file_path} -d {RESULTS_FOLDER_PATH}{result_folder_name}")
+                f"../jadx-1.2.0/bin/jadx {file_path} -d {PATH_OF_RESULTS_FOLDER}{result_folder_name}")
 
         if "ARM" in file_type and "32-bit" in file_type:
             md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
