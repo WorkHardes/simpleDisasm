@@ -8,10 +8,10 @@ from disasm import DisasmContext, DisasmArchiveStrategy, DisasmBinFileStrategy
 
 
 # BROKER_CONN_URI = "pyamqp://guest@localhost//"
-celery = Celery('fileploader', broker=BROKER_CONN_URI)
+celery_app = Celery('fileploader', broker=BROKER_CONN_URI)
 
 
-@celery.task()
+@celery_app.task()
 def file_disasm_task(file_path: str) -> None:
     # Define file type
     file_content = open(file_path, "rb").read()

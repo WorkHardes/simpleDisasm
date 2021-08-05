@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import os
-import pathlib
 import zipfile
 import magic
 
 from capstone import *
-from capstone.arm import *
 from abc import ABC, abstractmethod
-from typing import List
 
 from config import PATH_OF_RESULTS_FOLDER, PATH_OF_EXTRACTED_ARCHIVES_FOLDER
 
