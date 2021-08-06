@@ -33,21 +33,25 @@ class DisasmStrategy(ABC):
     def disasm_file(self, file_path: str, result_folder_name: str) -> None:
         pass
 
-    def define_result_file_name(self, result_file_name: str) -> str:
-        # Defining the file name and extension
-        result_file_name = result_file_name[::-1]
-        file_name = result_file_name[result_file_name.find(".")+1:]
+    def get_file_name(self, file_full_name: str) -> str:
+        file_full_name = file_full_name[::-1]
+        file_name = file_full_name[file_full_name.find(".")+1:]
         file_name = file_name[::-1]
+        return file_name
 
-        if result_file_name.find(".") != -1:
-            file_extension = result_file_name[:result_file_name.find(".")]
+    def get_file_extension(self, file_full_name: str) -> str:
+        if file_full_name.find(".") != -1:
+            file_extension = file_full_name[:file_full_name.find(".")]
             file_extension = file_extension[::-1]
         else:
             file_extension = ""
+        return file_extension
 
+    def define_result_file_name(self, file_full_name: str) -> str:
+        file_name = self.get_file_name(file_full_name)
+        file_extension = self.get_file_extension(file_full_name)
         result_file_name = file_name + "." + file_extension
-
-        # Defining the file name. If file name exists: {file_name} += "{file_name}_(копия {copy_number_counter}).{file_extension}"
+        # Defining the file name in results folder by setting (копия X) if it exists
         copy_number_counter = 0
         while True:
             if result_file_name in os.listdir(f"{PATH_OF_RESULTS_FOLDER}"):
@@ -60,19 +64,22 @@ class DisasmStrategy(ABC):
                 break
         return result_file_name
 
+    def get_folder_path_extracted_archives(self, file_path: str) -> str:
+        extraction_result_folder_path = os.path.basename(
+            file_path) + "_extracted"
+        extraction_result_folder_path = self.define_result_file_name(
+            extraction_result_folder_path)
+        folder_path_extracted_archives = f"{PATH_OF_EXTRACTED_ARCHIVES_FOLDER}{extraction_result_folder_path}"
+        return folder_path_extracted_archives
+
     def extract_archive(self, file_path: str) -> str:
         archive = zipfile.ZipFile(file_path, "r")
-
-        result_folder_path = os.path.basename(file_path) + "_extracted"
-        result_folder_path = self.define_result_file_name(result_folder_path)
-
-        result_of_extraction_folder_path = f"{PATH_OF_EXTRACTED_ARCHIVES_FOLDER}{result_folder_path}"
-        archive.extractall(result_of_extraction_folder_path)
-
-        print(f"Archive extracted in {result_of_extraction_folder_path}")
-
+        folder_path_extracted_archives = self.get_folder_path_extracted_archives(
+            file_path)
+        archive.extractall(folder_path_extracted_archives)
+        print(f"Archive extracted in {folder_path_extracted_archives}")
         archive.close()
-        return result_of_extraction_folder_path
+        return folder_path_extracted_archives
 
     def disasm_and_save_result(self, md: Cs, file_path: str, result_folder_name: str, result_file_name: str) -> None:
         try:
@@ -144,9 +151,6 @@ class DisasmArchiveStrategy(DisasmStrategy):
                         f"../jadx-1.2.0/bin/jadx {file_path} -d {PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_folder_name_java_files}")
 
         if len(executable_files_list) != 0:
-            # asm_result_folder_name = file_path[::-1]
-            # asm_result_folder_name = asm_result_folder_name[asm_result_folder_name.find(
-            #     "/")-1::-1] + "_asm_files/"
             asm_result_folder_name = file_name + "_asm_files/"
             result_folder_name += asm_result_folder_name
             res = os.mkdir(f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}")
