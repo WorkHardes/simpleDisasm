@@ -5,6 +5,9 @@ temp/
 plasma/
 *extracted/
 *disasm/
+*smali_files/
+*java_files/
+*asm_files/
 
 # Folders program need
 # files/
@@ -13,7 +16,7 @@ plasma/
 
 # Other files
 tests.py
-1.jar
+*.jar
 *.apk
 *.dex
 *.elf
