@@ -1,4 +1,5 @@
 import os
+import pathlib
 import zipfile
 import magic
 import platform
@@ -16,51 +17,8 @@ def open_file(file_path: str) -> str:
         print(f"Error! File {file_path} doesn't exists!")
 
 
-def get_file_name(file_full_name: str) -> str:
-    file_full_name = file_full_name[::-1]
-    if file_full_name.find("/") > -1:
-        file_name = file_full_name[file_full_name.find(
-            ".")+1:file_full_name.find("/")]
-    else:
-        file_name = file_full_name[file_full_name.find(
-            ".")+1:]
-    file_name = file_name[::-1]
-    return file_name
-
-
-def get_file_extension(file_full_name: str) -> str:
-    file_full_name = file_full_name[::-1]
-    if file_full_name.find(".") != -1:
-        file_extension = file_full_name[:file_full_name.find(".")]
-        file_extension = file_extension[::-1]
-    else:
-        file_extension = ""
-    return file_extension
-
-
-def define_result_file_or_folder_name(file_full_name: str) -> str:
-    file_name = get_file_name(file_full_name)
-    file_extension = get_file_extension(file_full_name)
-    result_file_name = file_name + "." + file_extension
-    # Defining the file name in results folder by setting (копия X) if it exists
-    copy_number_counter = 0
-    while True:
-        if result_file_name in os.listdir(f"{PATH_OF_RESULTS_FOLDER}"):
-            file_name = file_name.replace(
-                f"_(копия {copy_number_counter})", "")
-            copy_number_counter += 1
-            file_name += f"_(копия {copy_number_counter})"
-            result_file_name = file_name + "." + file_extension
-        else:
-            break
-    return result_file_name
-
-
 def get_folder_path_extracted_archives(file_path: str) -> str:
-    extraction_result_folder_path = os.path.basename(
-        file_path) + "_extracted"
-    extraction_result_folder_path = define_result_file_or_folder_name(
-        extraction_result_folder_path)
+    extraction_result_folder_path = pathlib.Path(file_path).name + "_extracted"
     folder_path_extracted_archives = f"{PATH_OF_EXTRACTED_ARCHIVES_FOLDER}{extraction_result_folder_path}"
     return folder_path_extracted_archives
 
@@ -76,8 +34,8 @@ def extract_archive(file_path: str) -> str:
 
 
 def disasm_with_dex2jar(file_path: str, result_folder_name: str) -> None:
-    file_name = define_result_file_or_folder_name(file_path)
-    smali_result_folder_name = file_name + "_smali_files/"
+    result_folder_name += "/"
+    smali_result_folder_name = pathlib.Path(file_path).name + "_smali_files/"
     if "Windows" in platform.system():
         os.system(
             f"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{smali_result_folder_name}")
@@ -109,8 +67,10 @@ def define_md_options(file_path: str) -> Cs:
     return md
 
 
-def disasm_and_save_result(file_path: str, result_folder_name: str) -> None:
+def disasm_and_save_result(file_path: str, result_folder_name: str = None) -> None:
     file_content = open_file(file_path)
+    if result_folder_name == None:
+        result_folder_name = ""
 
     # Setting disasm with capstone options on md
     md = define_md_options(file_path)
@@ -118,8 +78,7 @@ def disasm_and_save_result(file_path: str, result_folder_name: str) -> None:
     md.skipdata_setup = ("db", None, None)
     md.skipdata = True
 
-    result_file_name = os.path.basename(file_path) + "_disasm.asm"
-    result_file_name = define_result_file_or_folder_name(result_file_name)
+    result_file_name = pathlib.Path(file_path).name + ".asm"
     result_folder_path = f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_file_name}"
 
     # Disasm and saving result in {result_folder_path}
