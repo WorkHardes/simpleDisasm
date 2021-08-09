@@ -7,7 +7,7 @@ from config import PATH_OF_RESULTS_FOLDER, BROKER_CONN_URI
 from disasm import DisasmContext, DisasmArchiveStrategy, DisasmBinFileStrategy
 
 
-BROKER_CONN_URI = "pyamqp://guest@localhost//"
+# BROKER_CONN_URI = "pyamqp://guest@localhost//"
 celery_app = Celery('fileploader', broker=BROKER_CONN_URI)
 
 
