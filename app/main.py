@@ -4,7 +4,7 @@ from services import open_file
 
 def main() -> None:
     while True:
-        file_path = "../files/1.jar"
+        file_path = "../files/5.apk"
         if open_file(file_path) != None:
             break
 

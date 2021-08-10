@@ -73,7 +73,6 @@ def define_md_options(file_path: str) -> Cs:
         elif "64-bit" in file_type or "x86-64" in file_type:
             md = Cs(CS_ARCH_X86, CS_MODE_64)
             print("Capstone start options: CS_ARCH_X86, CS_MODE_64")
-    first_disasm_mode = md.mode
     md.skipdata_setup = ("db", None, None)
     md.skipdata = True
     return md
@@ -83,8 +82,6 @@ def disasm_and_save_result(file_path: str, result_folder_name: str = None) -> No
     # Setting disasm with capstone options on md
     md = define_md_options(file_path)
     first_disasm_mode = md.mode
-    md.skipdata_setup = ("db", None, None)
-    md.skipdata = True
 
     # Disasm and saving result in {result_folder_path}
     if result_folder_name == None:
