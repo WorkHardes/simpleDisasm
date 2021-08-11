@@ -34,7 +34,7 @@ class DisasmContext():
 class DisasmStrategy(ABC):
 
     @abstractmethod
-    def disasm_file(self, file_path: str, result_folder_name: str = None) -> None:
+    def disasm_file(self, file_path: str) -> None:
         pass
 
 
