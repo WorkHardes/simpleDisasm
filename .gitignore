@@ -2,7 +2,6 @@
 venv/
 __pycache__/
 temp/
-ROPgadget/
 *extracted/
 *disasm/
 *smali_files/
@@ -16,9 +15,12 @@ ROPgadget/
 
 # Other files
 tests.py
+*.asm
 *.jar
+*.java
 *.apk
 *.dex
 *.elf
 *.so
 *.class
+*.smali
