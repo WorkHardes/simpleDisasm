@@ -4,7 +4,6 @@ import os
 import pathlib
 import zipfile
 import magic
-import platform
 
 from capstone import *
 from abc import ABC, abstractmethod

@@ -1,12 +1,11 @@
 import os
 import pathlib
-import zipfile
 import magic
 import platform
 
 from capstone import *
 
-from config import PATH_OF_RESULTS_FOLDER, PATH_OF_EXTRACTED_ARCHIVES_FOLDER
+from config import PATH_OF_RESULTS_FOLDER
 
 
 def open_file(file_path: str) -> str:
@@ -26,10 +25,10 @@ def disasm_with_dex2jar(file_path: str, result_folder_name: str = None) -> None:
     smali_result_folder_name = file_full_name + "_classes.dex/"
     if "Windows" in platform.system():
         os.system(
-            f"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{smali_result_folder_name}")
+            rf"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{smali_result_folder_name}")
     else:
         os.system(
-            f"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{smali_result_folder_name}")
+            rf"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{smali_result_folder_name}")
 
 
 def disasm_with_jadx(file_path: str, result_folder_name: str = None) -> None:
@@ -83,7 +82,6 @@ def disasm_and_save_result(file_path: str, result_folder_name: str = None) -> No
     md = define_md_options(file_path)
     first_disasm_mode = md.mode
 
-    # Disasm and saving result in {result_folder_path}
     if result_folder_name == None:
         result_folder_name = ""
     result_file_name = pathlib.Path(file_path).name + ".asm"

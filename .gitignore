@@ -2,7 +2,7 @@
 venv/
 __pycache__/
 temp/
-plasma/
+ROPgadget/
 *extracted/
 *disasm/
 *smali_files/
