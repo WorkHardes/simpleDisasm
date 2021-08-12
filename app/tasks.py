@@ -20,4 +20,4 @@ def file_disasm_task(file_path: str) -> None:
         disasm_context = DisasmContext(DisasmArchiveStrategy())
     else:
         disasm_context = DisasmContext(DisasmBinFileStrategy())
-    disasm_context.choice_disasm_options(file_path)
+    disasm_context.choice_disasm_strategy(file_path)

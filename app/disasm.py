@@ -27,7 +27,7 @@ class DisasmContext():
     def disasm_strategy(self, disasm_strategy: DisasmStrategy) -> None:
         self._disasm_strategy = disasm_strategy
 
-    def choice_disasm_options(self, file_path: str) -> None:
+    def choice_disasm_strategy(self, file_path: str) -> None:
         self._disasm_strategy.disasm_file(file_path)
 
 
@@ -40,32 +40,17 @@ class DisasmStrategy(ABC):
 
 class DisasmArchiveStrategy(DisasmStrategy):
 
-    def get_folder_path_extracted_archives(self, file_path: str) -> str:
-        folder_path_extracted_archives = pathlib.Path(file_path).name
-        folder_path_extracted_archives += "_extracted"
-        folder_path_extracted_archives = f"{PATH_OF_EXTRACTED_ARCHIVES_FOLDER}{folder_path_extracted_archives}"
-        return folder_path_extracted_archives
-
-    def extract_archive(self, file_path: str) -> str:
-        archive = zipfile.ZipFile(file_path, "r")
-        folder_path_extracted_archives = self.get_folder_path_extracted_archives(
-            file_path)
-        archive.extractall(folder_path_extracted_archives)
-        print(
-            f"Archive {file_path} extracted in {folder_path_extracted_archives}")
-        archive.close()
-        return folder_path_extracted_archives
-
     def disasm_file(self, file_path: str) -> None:
         result_folder_name = pathlib.Path(file_path).name + "/"
         pathlib.Path(f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}").mkdir(parents=True,
                                                                             exist_ok=True)
-        folder_path_extracted_archives = self.extract_archive(file_path)
+        folder_path_extracted_archives = ArhiveExtractor().extract_archive(
+            file_path)
         for root, dirs, files in os.walk(folder_path_extracted_archives):
             for extracted_file_path in files:
                 extracted_file_path = root + "/" + extracted_file_path
                 disasm_context = DisasmContext(DisasmBinFileStrategy())
-                disasm_context.choice_disasm_options(extracted_file_path)
+                disasm_context.choice_disasm_strategy(extracted_file_path)
 
 
 class DisasmBinFileStrategy(DisasmStrategy):
@@ -166,3 +151,21 @@ class DisasmBinFileStrategy(DisasmStrategy):
             self.disasm_with_dex2jar(file_path)
         elif "ELF" in file_type:
             self.disasm_with_capstone(file_path)
+
+
+class ArhiveExtractor():
+    def get_folder_path_extracted_archives(self, file_path: str) -> str:
+        folder_path_extracted_archives = pathlib.Path(file_path).name
+        folder_path_extracted_archives += "_extracted"
+        folder_path_extracted_archives = f"{PATH_OF_EXTRACTED_ARCHIVES_FOLDER}{folder_path_extracted_archives}"
+        return folder_path_extracted_archives
+
+    def extract_archive(self, file_path: str) -> str:
+        archive = zipfile.ZipFile(file_path, "r")
+        folder_path_extracted_archives = self.get_folder_path_extracted_archives(
+            file_path)
+        archive.extractall(folder_path_extracted_archives)
+        print(
+            f"Archive {file_path} extracted in {folder_path_extracted_archives}")
+        archive.close()
+        return folder_path_extracted_archives
