@@ -75,7 +75,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
                                  file_path.find("_extracted")]
         if archive_name != "":
             result_folder_name = archive_name + "/"
-            result_folder_name_java_files = archive_name + "_java_files/"
+            result_folder_name_java_files = "java_files/"
         else:
             result_folder_name = pathlib.Path(file_path).name
         if "Windows" in platform.system():
@@ -91,7 +91,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
                                  file_path.find("_extracted")]
         if archive_name != "":
             result_folder_name = archive_name + "/"
-            result_folder_name_classes_dex = archive_name + "_classes.dex/"
+            result_folder_name_classes_dex = "classes.dex/"
         else:
             result_folder_name = pathlib.Path(file_path).name
         if "Windows" in platform.system():
