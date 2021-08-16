@@ -82,7 +82,6 @@ class DisasmBinFileStrategy(DisasmStrategy):
             os.system(
                 rf"..\jadx-1.2.0\bin\jadx {file_path} -d {PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_folder_name_java_files}")
         else:
-            os.system("chmod 777 ../jadx-1.2.0/bin/jadx")
             os.system(
                 rf"../jadx-1.2.0/bin/jadx {file_path} -d {PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_folder_name_java_files}")
 
@@ -99,7 +98,6 @@ class DisasmBinFileStrategy(DisasmStrategy):
             os.system(
                 rf"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_folder_name_classes_dex}")
         else:
-            os.system("chmod 777 ../dex2jar-2.0/d2j-baksmali.sh")
             os.system(
                 rf"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_folder_name_classes_dex}")
 
