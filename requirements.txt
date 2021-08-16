@@ -7,7 +7,7 @@ click==7.1.2
 click-didyoumean==0.0.3
 click-plugins==1.1.1
 click-repl==0.2.0
-gevent==21.1.2
+# gevent==21.1.2
 greenlet==1.1.0
 kombu==5.1.0
 libmagic==1.0

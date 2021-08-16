@@ -18,7 +18,7 @@ services:
     volumes:
       - ./results:/usr/src/results
       - ./extracted_archives:/usr/src/extracted_archives
-    command: "celery -A tasks worker -l info -P gevent"
+    command: "celery -A tasks worker -l info"
 
   disasm_app:
     build: .
