@@ -129,17 +129,28 @@ class DisasmBinFileStrategy(DisasmStrategy):
         md.skipdata = True
         return md
 
+    def get_result_file_path(self, file_path: str) -> str:
+        result_file_path = file_path[file_path.find("extracted_archives")+19:]
+        result_file_path = result_file_path.replace("_extracted", "")
+        if result_file_path == "":
+            result_file_path = pathlib.Path(file_path).name
+        result_file_path = PATH_OF_RESULTS_FOLDER + result_file_path + ".asm"
+        return result_file_path
+
+    def get_result_folder_path(self, result_file_path: str) -> str:
+        result_folder_path = result_file_path[::-1]
+        result_folder_path = result_folder_path[result_folder_path.find("/"):]
+        result_folder_path = result_folder_path[::-1]
+        return result_folder_path
+
     def disasm_with_capstone(self, file_path: str) -> None:
         md = self.define_md_options(file_path)
         first_disasm_mode = md.mode
 
-        archive_name = file_path[file_path.find("extracted_archives")+19:
-                                 file_path.find("_extracted")]
-        result_folder_name = "/" + archive_name + "/"
-        result_file_name = pathlib.Path(file_path).name + ".asm"
-        result_folder_path = f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_file_name}"
-
-        with open(result_folder_path, "w") as result_file:
+        result_file_path = self.get_result_file_path(file_path)
+        result_folder_path = self.get_result_folder_path(result_file_path)
+        pathlib.Path(result_folder_path).mkdir(parents=True, exist_ok=True)
+        with open(result_file_path, "w") as result_file:
             file_content = open_file(file_path)
             for (address, size, mnemonic, op_str) in md.disasm_lite(file_content, 0x1):
                 # Changing disasm MODE
@@ -152,7 +163,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
                         md.mode = first_disasm_mode + CS_MODE_BIG_ENDIAN
                 result_file.write("0x{: <5} {: <8} {: <8}\n".format(address,
                                                                     mnemonic, op_str))
-        print(f"Result of the disasm file in {result_folder_path}", "\n")
+        print(f"Result of the disasm file in {result_file_path}", "\n")
 
     def disasm_file(self, file_path: str) -> None:
         file_content = open_file(file_path)
