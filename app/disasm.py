@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import shutil
 import zipfile
 import platform
 
@@ -61,6 +62,16 @@ class DisasmArchiveStrategy(DisasmStrategy):
                 extracted_file_path = root + "/" + extracted_file_path
                 disasm_context = DisasmContext(DisasmBinFileStrategy())
                 disasm_context.choice_disasm_strategy(extracted_file_path)
+
+        file_name = pathlib.Path(file_path).name
+        path_java_files = f"{PATH_OF_RESULTS_FOLDER}{file_name}/java_files/"
+        for root, dirs, files in os.walk(f"{path_java_files}sources/"):
+            for java_file in files:
+                # file_path find using pathlib!!
+                print(f"{root}{java_file}")
+                shutil.move(f"{root}/{java_file}",
+                            f"{PATH_OF_RESULTS_FOLDER}{file_name}")
+        shutil.rmtree(path_java_files)
 
 
 class DisasmBinFileStrategy(DisasmStrategy):
