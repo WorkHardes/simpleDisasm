@@ -10,7 +10,7 @@ import magic
 from capstone import *
 from abc import ABC, abstractmethod
 
-from config import PATH_OF_RESULTS_FOLDER, PATH_OF_EXTRACTED_ARCHIVES_FOLDER
+from config import PATH_OF_RESULTS_FOLDER, PATH_OF_EXTRACTED_ARCHIVES_FOLDER, NAME_OF_EXTRACTED_ARCHIVES_FOLDER
 from services import open_file
 
 
@@ -71,7 +71,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
         print("file_path: ", file_path, "\nfile_type: ", file_type)
 
         result_folder_name_java_files = ""
-        archive_name = file_path[file_path.find("extracted_archives")+19:
+        archive_name = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+19:
                                  file_path.find("_extracted")]
         if archive_name != "":
             result_folder_name = archive_name + "/"
@@ -87,7 +87,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
 
     def disasm_with_dex2jar(self, file_path: str) -> None:
         result_folder_name_classes_dex = ""
-        archive_name = file_path[file_path.find("extracted_archives")+19:
+        archive_name = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+19:
                                  file_path.find("_extracted")]
         if archive_name != "":
             result_folder_name = archive_name + "/"
@@ -128,7 +128,8 @@ class DisasmBinFileStrategy(DisasmStrategy):
         return md
 
     def get_result_file_path(self, file_path: str) -> str:
-        result_file_path = file_path[file_path.find("extracted_archives")+19:]
+        result_file_path = file_path[file_path.find(
+            NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+19:]
         result_file_path = result_file_path.replace("_extracted", "")
         if result_file_path == "":
             result_file_path = pathlib.Path(file_path).name
