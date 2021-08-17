@@ -1,6 +1,4 @@
-FROM openjdk:slim
-
-COPY --from=python:3.9 / /
+FROM rappdw/docker-java-python
 
 COPY ./app /usr/src/app
 COPY ./files /usr/src/files
