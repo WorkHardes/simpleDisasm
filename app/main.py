@@ -5,7 +5,7 @@ from services import open_file
 def main() -> None:
     while True:
         # file_path = str(input("Inputh file or archive path: "))
-        file_path = "../files/7.jar"
+        file_path = "../files/3.so"
         if open_file(file_path) != None:
             break
 

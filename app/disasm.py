@@ -12,7 +12,7 @@ from capstone import *
 from abc import ABC, abstractmethod
 
 from config import PATH_OF_RESULTS_FOLDER, PATH_OF_EXTRACTED_ARCHIVES_FOLDER, NAME_OF_EXTRACTED_ARCHIVES_FOLDER
-from services import open_file
+from services import open_file, move_java_files
 
 
 class DisasmContext():
@@ -62,16 +62,7 @@ class DisasmArchiveStrategy(DisasmStrategy):
                 extracted_file_path = root + "/" + extracted_file_path
                 disasm_context = DisasmContext(DisasmBinFileStrategy())
                 disasm_context.choice_disasm_strategy(extracted_file_path)
-
-        file_name = pathlib.Path(file_path).name
-        path_java_files = f"{PATH_OF_RESULTS_FOLDER}{file_name}/java_files/"
-        for root, dirs, files in os.walk(f"{path_java_files}sources/"):
-            for java_file in files:
-                # file_path find using pathlib!!
-                print(f"{root}{java_file}")
-                shutil.move(f"{root}/{java_file}",
-                            f"{PATH_OF_RESULTS_FOLDER}{file_name}")
-        shutil.rmtree(path_java_files)
+        move_java_files(file_path)
 
 
 class DisasmBinFileStrategy(DisasmStrategy):
@@ -180,6 +171,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
         file_type = magic.from_buffer(file_content)
         if "compiled Java class data" in file_type:
             self.disasm_with_jadx(file_path)
+            move_java_files(file_path)
         elif "Dalvik dex" in file_type:
             self.disasm_with_dex2jar(file_path)
         elif "ELF" in file_type:
