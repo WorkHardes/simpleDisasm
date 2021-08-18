@@ -139,7 +139,7 @@ class DisasmBinFileStrategy(DisasmStrategy, FileServices):
 
 class CapstoneDisassembler():
 
-    def get_md_arm_options(self, file_type: str, md: Cs = None) -> Cs:
+    def get_md_arm_options(self, file_type: str, md: Cs) -> Cs:
         if "32-bit" in file_type:
             md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
             print("Capstone start options: CS_ARCH_ARM, CS_MODE_ARM")
@@ -148,7 +148,7 @@ class CapstoneDisassembler():
             print("Capstone start options: CS_ARCH_ARM64, CS_MODE_ARM")
         return md
 
-    def get_md_intel_options(self, file_type: str, md: Cs = None) -> Cs:
+    def get_md_intel_options(self, file_type: str, md: Cs) -> Cs:
         if "16-bit" in file_type or "MS-DOS executable" in file_type or "NE for MS Windows" in file_type:
             md = Cs(CS_ARCH_X86, CS_MODE_16)
             print("Capstone start options: CS_ARCH_X86, CS_MODE_16")
