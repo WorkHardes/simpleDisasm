@@ -12,7 +12,7 @@ from capstone import *
 from abc import ABC, abstractmethod
 
 from config import PATH_OF_RESULTS_FOLDER, PATH_OF_EXTRACTED_ARCHIVES_FOLDER, NAME_OF_EXTRACTED_ARCHIVES_FOLDER
-from services import open_file, move_java_files
+from services import move_java_files
 
 
 class DisasmContext():
@@ -68,8 +68,7 @@ class DisasmArchiveStrategy(DisasmStrategy):
 class DisasmBinFileStrategy(DisasmStrategy):
 
     def disasm_with_jadx(self, file_path: str) -> None:
-        file_content = open_file(file_path)
-        file_type = magic.from_buffer(file_content)
+        file_type = magic.from_file(file_path)
         print("file_path: ", file_path, "\nfile_type: ", file_type)
 
         result_folder_name_java_files = ""
@@ -105,8 +104,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
 
     def define_md_options(self, file_path: str) -> Cs:
         md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
-        file_content = open_file(file_path)
-        file_type = magic.from_buffer(file_content)
+        file_type = magic.from_file(file_path)
         print("Filepath", file_path, "\nFiletype: ", file_type)
         if "ARM" in file_type:
             if "32-bit" in file_type:
@@ -144,6 +142,15 @@ class DisasmBinFileStrategy(DisasmStrategy):
         result_folder_path = result_folder_path[::-1]
         return result_folder_path
 
+    def get_file_content(self, file_path: str) -> str:
+        try:
+            file_obj = open(file_path, "rb")
+            file_content = file_obj.read()
+            file_obj.close()
+            return file_content
+        except FileNotFoundError:
+            print(f"Error! File {file_path} doesn't exists!")
+
     def disasm_with_capstone(self, file_path: str) -> None:
         md = self.define_md_options(file_path)
         first_disasm_mode = md.mode
@@ -152,7 +159,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
         result_folder_path = self.get_result_folder_path(result_file_path)
         pathlib.Path(result_folder_path).mkdir(parents=True, exist_ok=True)
         with open(result_file_path, "w") as result_file:
-            file_content = open_file(file_path)
+            file_content = self.get_file_content(file_path)
             for (address, size, mnemonic, op_str) in md.disasm_lite(file_content, 0x1):
                 # Changing disasm MODE
                 if mnemonic in ("bx", "blx"):
@@ -167,8 +174,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
         print(f"Result of the disasm file in {result_file_path}", "\n")
 
     def disasm_file(self, file_path: str) -> None:
-        file_content = open_file(file_path)
-        file_type = magic.from_buffer(file_content)
+        file_type = magic.from_file(file_path)
         if "compiled Java class data" in file_type:
             self.disasm_with_jadx(file_path)
             move_java_files(file_path)

@@ -6,14 +6,6 @@ import shutil
 from config import PATH_OF_RESULTS_FOLDER
 
 
-def open_file(file_path: str) -> str:
-    try:
-        file_content = open(file_path, "rb").read()
-        return file_content
-    except FileNotFoundError:
-        print(f"Error! File {file_path} doesn't exists!")
-
-
 def move_java_files(file_path: str) -> None:
     file_name = pathlib.Path(file_path).name
     path_java_files = f"{PATH_OF_RESULTS_FOLDER}{file_name}"
