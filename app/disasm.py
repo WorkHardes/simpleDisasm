@@ -40,17 +40,22 @@ class DisasmStrategy(ABC):
 
 class FileServices():
 
-    def move_java_files(self, file_path: str) -> None:
+    def get_java_files_path(self, file_path: str) -> str:
         file_name = Path(file_path).name
-        path_java_files = f"{PATH_OF_RESULTS_FOLDER}{file_name}"
-        if Path(f"{path_java_files}/java_files/sources/").exists() is True:
-            path_java_files += "/java_files/"
-        elif Path(f"{path_java_files}/sources/").exists() is True:
-            path_java_files += "/sources/"
+        java_files_path = PATH_OF_RESULTS_FOLDER + file_name
+        if Path(f"{java_files_path}/java_files/sources/").exists() is True:
+            java_files_path += "/java_files/"
+        elif Path(f"{java_files_path}/sources/").exists() is True:
+            java_files_path += "/sources/"
         else:
-            return
+            return None
+        return java_files_path
 
-        for root, dirs, files in os.walk(f"{path_java_files}"):
+    def move_java_files(self, file_path: str) -> None:
+        java_files_path = self.get_java_files_path(file_path)
+        if java_files_path is None:
+            return
+        for root, dirs, files in os.walk(java_files_path):
             for java_file in files:
                 result_folder_path = root.replace("/java_files", "")
                 result_folder_path = result_folder_path.replace("/sources", "")
@@ -59,82 +64,33 @@ class FileServices():
                                                exist_ok=True)
                 shutil.move(f"{root}/{java_file}",
                             result_folder_path)
-        shutil.rmtree(path_java_files)
+        shutil.rmtree(java_files_path)
 
 
 class DisasmArchiveStrategy(DisasmStrategy, FileServices):
 
     def extract_archive(self, file_path: str) -> str:
-        exctracted_archive_folder_name = Path(file_path).name + "_extracted"
-        folder_path_extracted_archives = Path().joinpath(PATH_OF_EXTRACTED_ARCHIVES_FOLDER,
-                                                         exctracted_archive_folder_name)
+        exctracted_archive_name = Path(file_path).name + "_extracted"
+        extracted_archives_path = Path().joinpath(PATH_OF_EXTRACTED_ARCHIVES_FOLDER,
+                                                  exctracted_archive_name)
         archive = ZipFile(file_path, "r")
-        archive.extractall(folder_path_extracted_archives)
-        print(
-            f"Archive {file_path} extracted in {folder_path_extracted_archives}")
+        archive.extractall(extracted_archives_path)
+        print(f"Archive {file_path} extracted in {extracted_archives_path}")
         archive.close()
-        return folder_path_extracted_archives
+        return extracted_archives_path
 
     def disasm_file(self, file_path: str) -> None:
-        result_folder_name = Path(file_path).name + "/"
+        result_folder_name = Path(file_path).name
         Path(f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}").mkdir(parents=True,
                                                                     exist_ok=True)
-        folder_path_extracted_archives = self.extract_archive(file_path)
-        for root, dirs, files in os.walk(folder_path_extracted_archives):
+
+        extracted_archives_path = self.extract_archive(file_path)
+        for root, dirs, files in os.walk(extracted_archives_path):
             for extracted_file_path in files:
                 extracted_file_path = root + "/" + extracted_file_path
                 disasm_context = DisasmContext(DisasmBinFileStrategy())
                 disasm_context.choice_disasm_strategy(extracted_file_path)
         self.move_java_files(file_path)
-
-
-class DisasmBinFileStrategy(DisasmStrategy, FileServices):
-
-    def get_result_file_path(self, file_path: str) -> str:
-        result_folder_name_files = ""
-        archive_name = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+19:
-                                 file_path.find("_extracted")]
-        if archive_name != "":
-            result_folder_name = archive_name + "/"
-            file_type = magic.from_file(file_path)
-            if "compiled Java class data" in file_type:
-                result_folder_name_files = "java_files/"
-            elif "Dalvik dex" in file_type:
-                result_folder_name_files = "classes.dex/"
-        else:
-            result_folder_name = Path(file_path).name
-        result_folder_path_java_files = result_folder_name + result_folder_name_files
-        result_file_path = Path().joinpath(PATH_OF_RESULTS_FOLDER,
-                                           result_folder_path_java_files)
-        return result_file_path
-
-    def disasm_with_jadx(self, file_path: str) -> None:
-        result_file_path = self.get_result_file_path(file_path)
-        if "Windows" in platform.system():
-            os.system(
-                rf"..\jadx-1.2.0\bin\jadx {file_path} -d {result_file_path}")
-        else:
-            os.system(
-                rf"../jadx-1.2.0/bin/jadx {file_path} -d {result_file_path}")
-
-    def disasm_with_dex2jar(self, file_path: str) -> None:
-        result_file_path = self.get_result_file_path(file_path)
-        if "Windows" in platform.system():
-            os.system(
-                rf"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {result_file_path}")
-        else:
-            os.system(
-                rf"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {result_file_path}")
-
-    def disasm_file(self, file_path: str) -> None:
-        file_type = magic.from_file(file_path)
-        if "compiled Java class data" in file_type:
-            self.disasm_with_jadx(file_path)
-            self.move_java_files(file_path)
-        elif "Dalvik dex" in file_type:
-            self.disasm_with_dex2jar(file_path)
-        elif "ELF" in file_type:
-            CapstoneDisassembler().disasm_with_capstone(file_path)
 
 
 class CapstoneDisassembler():
@@ -174,35 +130,29 @@ class CapstoneDisassembler():
         return md
 
     def get_result_file_path(self, file_path: str) -> str:
-        result_file_path = file_path[file_path.find(
-            NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+19:]
+        result_file_path = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER) +
+                                     len(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+1:]
         result_file_path = result_file_path.replace("_extracted", "")
         if result_file_path == "":
             result_file_path = Path(file_path).name
         result_file_path = PATH_OF_RESULTS_FOLDER + result_file_path + ".asm"
         return result_file_path
 
-    def get_result_folder_path(self, result_file_path: str) -> str:
-        result_folder_path = result_file_path[::-1]
-        result_folder_path = result_folder_path[result_folder_path.find("/"):]
-        result_folder_path = result_folder_path[::-1]
-        return result_folder_path
-
-    def get_file_content(self, file_path: str) -> str:
+    def get_file_content(self, file_path: str) -> bytes:
         try:
             file_obj = open(file_path, "rb")
             file_content = file_obj.read()
             file_obj.close()
-            return file_content
         except FileNotFoundError:
             print(f"Error! File {file_path} doesn't exists!")
+        return file_content
 
     def disasm_with_capstone(self, file_path: str) -> None:
         md = self.get_md_options(file_path)
         first_disasm_mode = md.mode
 
         result_file_path = self.get_result_file_path(file_path)
-        result_folder_path = self.get_result_folder_path(result_file_path)
+        result_folder_path = Path(Path(result_file_path).parent)
         Path(result_folder_path).mkdir(parents=True, exist_ok=True)
         with open(result_file_path, "w") as result_file:
             file_content = self.get_file_content(file_path)
@@ -218,3 +168,50 @@ class CapstoneDisassembler():
                 result_file.write("0x{: <5} {: <8} {: <8}\n".format(address,
                                                                     mnemonic, op_str))
         print(f"Result of the disasm file in {result_file_path}", "\n")
+
+
+class DisasmBinFileStrategy(DisasmStrategy, FileServices):
+
+    def get_result_file_path(self, file_path: str) -> str:
+        archive_name = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER) +
+                                 len(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+1:
+                                 file_path.find("_extracted")]
+        if archive_name != "":
+            result_folder_name = archive_name + "/"
+            file_type = magic.from_file(file_path)
+            if "compiled Java class data" in file_type:
+                result_folder_name += "java_files/"
+            elif "Dalvik dex" in file_type:
+                result_folder_name += "classes.dex/"
+        else:
+            result_folder_name = Path(file_path).name
+        result_file_path = PATH_OF_RESULTS_FOLDER + result_folder_name
+        return result_file_path
+
+    def disasm_with_jadx(self, file_path: str) -> None:
+        result_file_path = self.get_result_file_path(file_path)
+        if "Windows" in platform.system():
+            os.system(
+                rf"..\jadx-1.2.0\bin\jadx {file_path} -d {result_file_path}")
+        else:
+            os.system(
+                rf"../jadx-1.2.0/bin/jadx {file_path} -d {result_file_path}")
+
+    def disasm_with_dex2jar(self, file_path: str) -> None:
+        result_file_path = self.get_result_file_path(file_path)
+        if "Windows" in platform.system():
+            os.system(
+                rf"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {result_file_path}")
+        else:
+            os.system(
+                rf"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {result_file_path}")
+
+    def disasm_file(self, file_path: str) -> None:
+        file_type = magic.from_file(file_path)
+        if "compiled Java class data" in file_type:
+            self.disasm_with_jadx(file_path)
+            self.move_java_files(file_path)
+        elif "Dalvik dex" in file_type:
+            self.disasm_with_dex2jar(file_path)
+        elif "ELF" in file_type:
+            CapstoneDisassembler().disasm_with_capstone(file_path)

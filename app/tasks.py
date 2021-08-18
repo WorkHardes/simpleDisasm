@@ -1,9 +1,8 @@
-import pathlib
 import magic
 
 from celery import Celery
 
-from config import PATH_OF_RESULTS_FOLDER, BROKER_CONN_URI
+from config import BROKER_CONN_URI
 from disasm import DisasmContext, DisasmArchiveStrategy, DisasmBinFileStrategy
 
 
