@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import os
-import pathlib
 import shutil
-import zipfile
 import platform
-
 import magic
 
-from capstone import *
 from abc import ABC, abstractmethod
+from pathlib import Path
+from zipfile import ZipFile
+
+from capstone import *
 
 from config import PATH_OF_RESULTS_FOLDER, PATH_OF_EXTRACTED_ARCHIVES_FOLDER, NAME_OF_EXTRACTED_ARCHIVES_FOLDER
 
@@ -41,11 +41,11 @@ class DisasmStrategy(ABC):
 class FileServices():
 
     def move_java_files(self, file_path: str) -> None:
-        file_name = pathlib.Path(file_path).name
+        file_name = Path(file_path).name
         path_java_files = f"{PATH_OF_RESULTS_FOLDER}{file_name}"
-        if pathlib.Path(f"{path_java_files}/java_files/sources/").exists() is True:
+        if Path(f"{path_java_files}/java_files/sources/").exists() is True:
             path_java_files += "/java_files/"
-        elif pathlib.Path(f"{path_java_files}/sources/").exists() is True:
+        elif Path(f"{path_java_files}/sources/").exists() is True:
             path_java_files += "/sources/"
         else:
             return
@@ -55,8 +55,8 @@ class FileServices():
                 result_folder_path = root.replace("/java_files", "")
                 result_folder_path = result_folder_path.replace("/sources", "")
                 result_folder_path = result_folder_path.replace(java_file, "")
-                pathlib.Path(result_folder_path).mkdir(parents=True,
-                                                       exist_ok=True)
+                Path(result_folder_path).mkdir(parents=True,
+                                               exist_ok=True)
                 shutil.move(f"{root}/{java_file}",
                             result_folder_path)
         shutil.rmtree(path_java_files)
@@ -65,10 +65,10 @@ class FileServices():
 class DisasmArchiveStrategy(DisasmStrategy, FileServices):
 
     def extract_archive(self, file_path: str) -> str:
-        archive = zipfile.ZipFile(file_path, "r")
-        folder_path_extracted_archives = PATH_OF_EXTRACTED_ARCHIVES_FOLDER + \
-            pathlib.Path(file_path).name + \
-            "_extracted"
+        exctracted_archive_folder_name = Path(file_path).name + "_extracted"
+        folder_path_extracted_archives = Path().joinpath(PATH_OF_EXTRACTED_ARCHIVES_FOLDER,
+                                                         exctracted_archive_folder_name)
+        archive = ZipFile(file_path, "r")
         archive.extractall(folder_path_extracted_archives)
         print(
             f"Archive {file_path} extracted in {folder_path_extracted_archives}")
@@ -76,9 +76,9 @@ class DisasmArchiveStrategy(DisasmStrategy, FileServices):
         return folder_path_extracted_archives
 
     def disasm_file(self, file_path: str) -> None:
-        result_folder_name = pathlib.Path(file_path).name + "/"
-        pathlib.Path(f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}").mkdir(parents=True,
-                                                                            exist_ok=True)
+        result_folder_name = Path(file_path).name + "/"
+        Path(f"{PATH_OF_RESULTS_FOLDER}{result_folder_name}").mkdir(parents=True,
+                                                                    exist_ok=True)
         folder_path_extracted_archives = self.extract_archive(file_path)
         for root, dirs, files in os.walk(folder_path_extracted_archives):
             for extracted_file_path in files:
@@ -90,21 +90,26 @@ class DisasmArchiveStrategy(DisasmStrategy, FileServices):
 
 class DisasmBinFileStrategy(DisasmStrategy, FileServices):
 
-    def disasm_with_jadx(self, file_path: str) -> None:
-        file_type = magic.from_file(file_path)
-        print("file_path: ", file_path, "\nfile_type: ", file_type)
-
-        result_folder_name_java_files = ""
+    def get_result_file_path(self, file_path: str) -> str:
+        result_folder_name_files = ""
         archive_name = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+19:
                                  file_path.find("_extracted")]
         if archive_name != "":
             result_folder_name = archive_name + "/"
-            result_folder_name_java_files = "java_files/"
+            file_type = magic.from_file(file_path)
+            if "compiled Java class data" in file_type:
+                result_folder_name_files = "java_files/"
+            elif "Dalvik dex" in file_type:
+                result_folder_name_files = "classes.dex/"
         else:
-            result_folder_name = pathlib.Path(file_path).name
-        result_file_path = PATH_OF_RESULTS_FOLDER + \
-            result_folder_name + \
-            result_folder_name_java_files
+            result_folder_name = Path(file_path).name
+        result_folder_path_java_files = result_folder_name + result_folder_name_files
+        result_file_path = Path().joinpath(PATH_OF_RESULTS_FOLDER,
+                                           result_folder_path_java_files)
+        return result_file_path
+
+    def disasm_with_jadx(self, file_path: str) -> None:
+        result_file_path = self.get_result_file_path(file_path)
         if "Windows" in platform.system():
             os.system(
                 rf"..\jadx-1.2.0\bin\jadx {file_path} -d {result_file_path}")
@@ -113,17 +118,7 @@ class DisasmBinFileStrategy(DisasmStrategy, FileServices):
                 rf"../jadx-1.2.0/bin/jadx {file_path} -d {result_file_path}")
 
     def disasm_with_dex2jar(self, file_path: str) -> None:
-        result_folder_name_classes_dex = ""
-        archive_name = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+19:
-                                 file_path.find("_extracted")]
-        if archive_name != "":
-            result_folder_name = archive_name + "/"
-            result_folder_name_classes_dex = "classes.dex/"
-        else:
-            result_folder_name = pathlib.Path(file_path).name
-        result_file_path = PATH_OF_RESULTS_FOLDER + \
-            result_folder_name + \
-            result_folder_name_classes_dex
+        result_file_path = self.get_result_file_path(file_path)
         if "Windows" in platform.system():
             os.system(
                 rf"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {result_file_path}")
@@ -183,7 +178,7 @@ class CapstoneDisassembler():
             NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+19:]
         result_file_path = result_file_path.replace("_extracted", "")
         if result_file_path == "":
-            result_file_path = pathlib.Path(file_path).name
+            result_file_path = Path(file_path).name
         result_file_path = PATH_OF_RESULTS_FOLDER + result_file_path + ".asm"
         return result_file_path
 
@@ -208,7 +203,7 @@ class CapstoneDisassembler():
 
         result_file_path = self.get_result_file_path(file_path)
         result_folder_path = self.get_result_folder_path(result_file_path)
-        pathlib.Path(result_folder_path).mkdir(parents=True, exist_ok=True)
+        Path(result_folder_path).mkdir(parents=True, exist_ok=True)
         with open(result_file_path, "w") as result_file:
             file_content = self.get_file_content(file_path)
             for (address, size, mnemonic, op_str) in md.disasm_lite(file_content, 0x1):
