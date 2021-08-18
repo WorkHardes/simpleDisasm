@@ -2,13 +2,12 @@ from tasks import file_disasm_task
 
 
 def main() -> None:
-    while True:
-        # file_path = str(input("Inputh file or archive path: "))
-        file_path = "../files/5.apk"
-        with open(file_path, "rb") as file_obj:
-            if file_obj != None:
-                break
-            file_obj.close()
+    file_path = "../files/5.apk"
+    try:
+        file_obj = open(file_path, "rb")
+        file_obj.close()
+    except FileNotFoundError:
+        print(f"Error! No such file: {file_path}")
 
     file_disasm_task.delay(file_path)
 
