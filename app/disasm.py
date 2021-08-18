@@ -12,7 +12,6 @@ from capstone import *
 from abc import ABC, abstractmethod
 
 from config import PATH_OF_RESULTS_FOLDER, PATH_OF_EXTRACTED_ARCHIVES_FOLDER, NAME_OF_EXTRACTED_ARCHIVES_FOLDER
-from services import move_java_files
 
 
 class DisasmContext():
@@ -39,7 +38,31 @@ class DisasmStrategy(ABC):
         pass
 
 
-class DisasmArchiveStrategy(DisasmStrategy):
+class FileServices():
+
+    def move_java_files(self, file_path: str) -> None:
+        file_name = pathlib.Path(file_path).name
+        path_java_files = f"{PATH_OF_RESULTS_FOLDER}{file_name}"
+        if pathlib.Path(f"{path_java_files}/java_files/sources/").exists() is True:
+            path_java_files += "/java_files/"
+        elif pathlib.Path(f"{path_java_files}/sources/").exists() is True:
+            path_java_files += "/sources/"
+        else:
+            return
+
+        for root, dirs, files in os.walk(f"{path_java_files}"):
+            for java_file in files:
+                result_folder_path = root.replace("/java_files", "")
+                result_folder_path = result_folder_path.replace("/sources", "")
+                result_folder_path = result_folder_path.replace(java_file, "")
+                pathlib.Path(result_folder_path).mkdir(parents=True,
+                                                       exist_ok=True)
+                shutil.move(f"{root}/{java_file}",
+                            result_folder_path)
+        shutil.rmtree(path_java_files)
+
+
+class DisasmArchiveStrategy(DisasmStrategy, FileServices):
 
     def extract_archive(self, file_path: str) -> str:
         archive = zipfile.ZipFile(file_path, "r")
@@ -62,10 +85,10 @@ class DisasmArchiveStrategy(DisasmStrategy):
                 extracted_file_path = root + "/" + extracted_file_path
                 disasm_context = DisasmContext(DisasmBinFileStrategy())
                 disasm_context.choice_disasm_strategy(extracted_file_path)
-        move_java_files(file_path)
+        self.move_java_files(file_path)
 
 
-class DisasmBinFileStrategy(DisasmStrategy):
+class DisasmBinFileStrategy(DisasmStrategy, FileServices):
 
     def disasm_with_jadx(self, file_path: str) -> None:
         file_type = magic.from_file(file_path)
@@ -79,12 +102,15 @@ class DisasmBinFileStrategy(DisasmStrategy):
             result_folder_name_java_files = "java_files/"
         else:
             result_folder_name = pathlib.Path(file_path).name
+        result_file_path = PATH_OF_RESULTS_FOLDER + \
+            result_folder_name + \
+            result_folder_name_java_files
         if "Windows" in platform.system():
             os.system(
-                rf"..\jadx-1.2.0\bin\jadx {file_path} -d {PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_folder_name_java_files}")
+                rf"..\jadx-1.2.0\bin\jadx {file_path} -d {result_file_path}")
         else:
             os.system(
-                rf"../jadx-1.2.0/bin/jadx {file_path} -d {PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_folder_name_java_files}")
+                rf"../jadx-1.2.0/bin/jadx {file_path} -d {result_file_path}")
 
     def disasm_with_dex2jar(self, file_path: str) -> None:
         result_folder_name_classes_dex = ""
@@ -95,34 +121,59 @@ class DisasmBinFileStrategy(DisasmStrategy):
             result_folder_name_classes_dex = "classes.dex/"
         else:
             result_folder_name = pathlib.Path(file_path).name
+        result_file_path = PATH_OF_RESULTS_FOLDER + \
+            result_folder_name + \
+            result_folder_name_classes_dex
         if "Windows" in platform.system():
             os.system(
-                rf"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_folder_name_classes_dex}")
+                rf"..\dex2jar-2.0\d2j-baksmali.bat {file_path} -o {result_file_path}")
         else:
             os.system(
-                rf"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {PATH_OF_RESULTS_FOLDER}{result_folder_name}{result_folder_name_classes_dex}")
+                rf"../dex2jar-2.0/d2j-baksmali.sh {file_path} -o {result_file_path}")
 
-    def define_md_options(self, file_path: str) -> Cs:
-        md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
+    def disasm_file(self, file_path: str) -> None:
+        file_type = magic.from_file(file_path)
+        if "compiled Java class data" in file_type:
+            self.disasm_with_jadx(file_path)
+            self.move_java_files(file_path)
+        elif "Dalvik dex" in file_type:
+            self.disasm_with_dex2jar(file_path)
+        elif "ELF" in file_type:
+            CapstoneDisassembler().disasm_with_capstone(file_path)
+
+
+class CapstoneDisassembler():
+
+    def get_md_arm_options(self, file_type: str, md: Cs = None) -> Cs:
+        if "32-bit" in file_type:
+            md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
+            print("Capstone start options: CS_ARCH_ARM, CS_MODE_ARM")
+        elif"64-bit" in file_type:
+            md = Cs(CS_ARCH_ARM64, CS_MODE_ARM)
+            print("Capstone start options: CS_ARCH_ARM64, CS_MODE_ARM")
+        return md
+
+    def get_md_intel_options(self, file_type: str, md: Cs = None) -> Cs:
+        if "16-bit" in file_type or "MS-DOS executable" in file_type or "NE for MS Windows" in file_type:
+            md = Cs(CS_ARCH_X86, CS_MODE_16)
+            print("Capstone start options: CS_ARCH_X86, CS_MODE_16")
+        elif "32-bit" in file_type or "Intel 80386" in file_type or "x86-32" in file_type:
+            md = Cs(CS_ARCH_X86, CS_MODE_32)
+            print("Capstone start options: CS_ARCH_X86, CS_MODE_32")
+        elif "64-bit" in file_type or "x86-64" in file_type:
+            md = Cs(CS_ARCH_X86, CS_MODE_64)
+            print("Capstone start options: CS_ARCH_X86, CS_MODE_64")
+        return md
+
+    def get_md_options(self, file_path: str) -> Cs:
         file_type = magic.from_file(file_path)
         print("Filepath", file_path, "\nFiletype: ", file_type)
+
+        md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
         if "ARM" in file_type:
-            if "32-bit" in file_type:
-                md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
-                print("Capstone start options: CS_ARCH_ARM, CS_MODE_ARM")
-            elif"64-bit" in file_type:
-                md = Cs(CS_ARCH_ARM64, CS_MODE_ARM)
-                print("Capstone start options: CS_ARCH_ARM64, CS_MODE_ARM")
+            md = self.get_md_arm_options(file_type, md)
         if "Intel" in file_type:
-            if "16-bit" in file_type or "MS-DOS executable" in file_type or "NE for MS Windows" in file_type:
-                md = Cs(CS_ARCH_X86, CS_MODE_16)
-                print("Capstone start options: CS_ARCH_X86, CS_MODE_16")
-            elif "32-bit" in file_type or "Intel 80386" in file_type or "x86-32" in file_type:
-                md = Cs(CS_ARCH_X86, CS_MODE_32)
-                print("Capstone start options: CS_ARCH_X86, CS_MODE_32")
-            elif "64-bit" in file_type or "x86-64" in file_type:
-                md = Cs(CS_ARCH_X86, CS_MODE_64)
-                print("Capstone start options: CS_ARCH_X86, CS_MODE_64")
+            md = self.get_md_intel_options(file_type, md)
         md.skipdata_setup = ("db", None, None)
         md.skipdata = True
         return md
@@ -152,7 +203,7 @@ class DisasmBinFileStrategy(DisasmStrategy):
             print(f"Error! File {file_path} doesn't exists!")
 
     def disasm_with_capstone(self, file_path: str) -> None:
-        md = self.define_md_options(file_path)
+        md = self.get_md_options(file_path)
         first_disasm_mode = md.mode
 
         result_file_path = self.get_result_file_path(file_path)
@@ -172,13 +223,3 @@ class DisasmBinFileStrategy(DisasmStrategy):
                 result_file.write("0x{: <5} {: <8} {: <8}\n".format(address,
                                                                     mnemonic, op_str))
         print(f"Result of the disasm file in {result_file_path}", "\n")
-
-    def disasm_file(self, file_path: str) -> None:
-        file_type = magic.from_file(file_path)
-        if "compiled Java class data" in file_type:
-            self.disasm_with_jadx(file_path)
-            move_java_files(file_path)
-        elif "Dalvik dex" in file_type:
-            self.disasm_with_dex2jar(file_path)
-        elif "ELF" in file_type:
-            self.disasm_with_capstone(file_path)
