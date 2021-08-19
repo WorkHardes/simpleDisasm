@@ -119,7 +119,6 @@ class CapstoneDisassembler():
     def get_md_options(self, file_path: str) -> Cs:
         file_type = magic.from_file(file_path)
         print("Filepath", file_path, "\nFiletype: ", file_type)
-
         md = Cs(CS_ARCH_ARM, CS_MODE_ARM)
         if "ARM" in file_type:
             md = self.get_md_arm_options(file_type, md)
@@ -130,10 +129,14 @@ class CapstoneDisassembler():
         return md
 
     def get_result_file_path(self, file_path: str) -> str:
-        result_file_path = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER) +
-                                     len(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+1:]
-        result_file_path = result_file_path.replace("_extracted", "")
-        if result_file_path == "":
+        if file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER) != -1:
+            result_file_path = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER) +
+                                         len(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+1:]
+            result_file_path = result_file_path.replace("_extracted", "")
+        else:
+            result_file_path = None
+
+        if result_file_path is None:
             result_file_path = Path(file_path).name
         result_file_path = PATH_OF_RESULTS_FOLDER + result_file_path + ".asm"
         return result_file_path
@@ -173,10 +176,14 @@ class CapstoneDisassembler():
 class DisasmBinFileStrategy(DisasmStrategy, FileServices):
 
     def get_result_file_path(self, file_path: str) -> str:
-        archive_name = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER) +
-                                 len(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+1:
-                                 file_path.find("_extracted")]
-        if archive_name != "":
+        if file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER) != -1:
+            archive_name = file_path[file_path.find(NAME_OF_EXTRACTED_ARCHIVES_FOLDER) +
+                                     len(NAME_OF_EXTRACTED_ARCHIVES_FOLDER)+1:
+                                     file_path.find("_extracted")]
+        else:
+            archive_name = None
+
+        if archive_name is not None:
             result_folder_name = archive_name + "/"
             file_type = magic.from_file(file_path)
             if "compiled Java class data" in file_type:
