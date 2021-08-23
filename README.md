@@ -7,5 +7,5 @@ This is an application for disasm files.
 ### Build and run containers
 
 ```bash
-docker-compose up -d --build
+docker-compose up --build
 ```
